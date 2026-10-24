@@ -1,6 +1,6 @@
 // Tune (dev) + evaluate (test) the shipped browser Speller, with the exact code that runs in the page.
 import fs from 'fs';
-import { Speller, osa } from '../web/vsa-core.js';
+import { Speller, osa } from '../docs/vsa-core.js';
 const D = +(process.argv[2] || 1024);
 const entries = fs.readFileSync('data/en-80k.txt', 'utf8').trim().split('\n').map(l => { const [w, c] = l.split(' '); return [w, +c]; });
 let t = performance.now(); const sp = new Speller({ D }); sp.build(entries);

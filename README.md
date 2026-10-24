@@ -7,6 +7,8 @@ browser, with no language model and no server. An optional grammar layer comes f
 
 ![Screenshot](docs/screenshot.png)
 
+Live page (once GitHub Pages is on): <https://ml-circuits-research.github.io/vsa-spell/>
+
 ## Run it on your computer
 
 Requirements: Node.js 18 or newer. The trained models are committed, so nothing needs training.
@@ -21,7 +23,14 @@ Open <http://127.0.0.1:8080/>. The page loads about 12 MB of models, builds 80,0
 hypervectors in about 2 seconds and checks as you type.
 
 A local web server is required: browsers will not start the module Web Worker from a `file://` URL.
-`python3 -m http.server 8080 -d web` works as well.
+`python3 -m http.server 8080 -d docs` works as well.
+
+### Publish with GitHub Pages
+
+The page lives in `docs/`, so no build step is needed: in the repository's **Settings → Pages**,
+set **Source** to *Deploy from a branch*, branch `main`, folder `/docs`. `docs/.nojekyll` makes
+Pages serve the files as they are. On Pages, `docs/vendor/` is not committed, so the Harper
+layer loads from jsDelivr.
 
 ### Add the Harper grammar layer
 
@@ -30,11 +39,11 @@ jsDelivr (about 27 MB). To run fully offline instead:
 
 ```bash
 npm install
-npm run vendor:harper  # copies Harper into web/vendor/harper.js
+npm run vendor:harper  # copies Harper into docs/vendor/harper.js
 npm run serve
 ```
 
-The page then loads Harper from `web/vendor/` with no network access. Details, versions and
+The page then loads Harper from `docs/vendor/` with no network access. Details, versions and
 troubleshooting: [docs/HARPER.md](docs/HARPER.md).
 
 ## What is in the page
@@ -76,11 +85,11 @@ false-alarm rate. Full numbers, earlier rounds and caveats: [docs/BENCHMARKS.md]
 ## Repository layout
 
 ```
-web/        the demo: index.html, worker.js, vsa-core.js (shared with Node), models
+docs/       the demo (index.html, worker.js, vsa-core.js shared with Node, models) and the
+            documentation; GitHub Pages publishes this folder
 src/        corpus building, confusion-set mining, training and benchmarks
 scripts/    static server, Harper vendoring, data download
 results/    JSON outputs of the benchmark runs
-docs/       architecture, benchmarks, Harper, reproduction
 tests/      headless browser test (Playwright)
 data/       confusions.json (other data files are downloaded, see docs/REPRODUCE.md)
 ```
@@ -92,6 +101,6 @@ See [docs/REPRODUCE.md](docs/REPRODUCE.md). In short: `npm install`, `pip instal
 
 ## Licenses
 
-Code in this repository: MIT. `web/double-metaphone.js` is Titus Wormer's double-metaphone (MIT).
-`web/words.txt` is SymSpell's English frequency dictionary (MIT). Harper is Apache-2.0 and is not
+Code in this repository: MIT. `docs/double-metaphone.js` is Titus Wormer's double-metaphone (MIT).
+`docs/words.txt` is SymSpell's English frequency dictionary (MIT). Harper is Apache-2.0 and is not
 committed; it is loaded from npm or the CDN.

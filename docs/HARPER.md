@@ -15,16 +15,16 @@ caches it after the first load.
 
 ```bash
 npm install            # installs harper.js 2.13.0 from package.json
-npm run vendor:harper  # copies node_modules/harper.js/dist to web/vendor/harper.js (about 40 MB: the JS API and the two .wasm builds)
+npm run vendor:harper  # copies node_modules/harper.js/dist to docs/vendor/harper.js (about 40 MB: the JS API and the two .wasm builds)
 npm run serve
 ```
 
-When `web/vendor/harper.js/index.js` exists, the page loads Harper from there and fetches the
-`.wasm` file directly instead of the inlined build. `web/vendor/` is in `.gitignore`.
+When `docs/vendor/harper.js/index.js` exists, the page loads Harper from there and fetches the
+`.wasm` file directly instead of the inlined build. `docs/vendor/` is in `.gitignore`.
 
 To use another Harper version, change it in `package.json`, run `npm install` and
 `npm run vendor:harper` again. For the CDN path, change `HARPER_CDN` near the end of
-`web/index.html`.
+`docs/index.html`.
 
 ## Using Harper from Node
 

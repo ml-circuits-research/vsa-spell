@@ -1,10 +1,10 @@
-// Minimal static server for web/ (no dependencies). Usage: node scripts/serve.mjs [port]
+// Minimal static server for docs/ (the page GitHub Pages serves) (no dependencies). Usage: node scripts/serve.mjs [port]
 // Needed because browsers refuse to run module workers from file:// URLs.
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const ROOT = path.resolve('web');
+const ROOT = path.resolve('docs');
 const PORT = +(process.argv[2] || process.env.PORT || 8080);
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',

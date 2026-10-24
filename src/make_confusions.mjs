@@ -3,7 +3,7 @@
 // homophones with identical Double Metaphone codes).
 import fs from 'fs';
 import { doubleMetaphone } from 'double-metaphone';
-import { osa } from '../web/vsa-core.js';
+import { osa } from '../docs/vsa-core.js';
 
 const CURATED = `
 their there|then than|to too two|affect effect|accept except|lose loose loss|form from|quite quiet quit|weather whether

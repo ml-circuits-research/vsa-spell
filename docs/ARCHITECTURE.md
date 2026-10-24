@@ -1,6 +1,6 @@
 # Architecture
 
-Everything that runs in the page lives in `web/vsa-core.js`. Node imports the same file for
+Everything that runs in the page lives in `docs/vsa-core.js`. Node imports the same file for
 tuning and benchmarks, so the browser runs exactly the code that was measured. A headless test
 checks that browser and Node context scores agree (maximum difference 7·10⁻⁶ over 200 cases).
 
@@ -70,8 +70,8 @@ a model trained without `big.txt`, so they are out of domain.
 
 ## 3. Page structure
 
-- `web/index.html`: editor (textarea with a highlight backdrop), margin notes, benchmark tables.
-- `web/worker.js`: loads `words.txt`, `ctx_meta.json`, `ctx_vectors.bin`, builds the speller
+- `docs/index.html`: editor (textarea with a highlight backdrop), margin notes, benchmark tables.
+- `docs/worker.js`: loads `words.txt`, `ctx_meta.json`, `ctx_vectors.bin`, builds the speller
   and answers `check` messages off the main thread.
 - Harper (optional) runs on the main thread; see [HARPER.md](HARPER.md).
 - Drafts, ignored words and the strictness setting are kept in `localStorage`.

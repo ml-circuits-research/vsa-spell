@@ -174,9 +174,9 @@ if (EXPORT) { // model for the browser: header JSON + one int8 blob
   const meta = { D: cfg.D, W: cfg.W, K, seed: 12345, shiftMul: 7919, shiftOff: 16, wPrior, tau: res.vsaTau,
     sets: SETS.map(s => s.words), enabled: res.vsaEnabled, words, scales: words.map(w => Q.get(w).s), logPrior: words.map(w => +logPrior(w).toFixed(4)) };
   const blob = new Int8Array(words.length * cfg.D); words.forEach((w, k) => blob.set(Q.get(w).q, k * cfg.D));
-  fs.mkdirSync('web', { recursive: true });
-  fs.writeFileSync('web/ctx_meta.json', JSON.stringify(meta));
-  fs.writeFileSync('web/ctx_vectors.bin', Buffer.from(blob.buffer));
+  fs.mkdirSync('docs', { recursive: true });
+  fs.writeFileSync('docs/ctx_meta.json', JSON.stringify(meta));
+  fs.writeFileSync('docs/ctx_vectors.bin', Buffer.from(blob.buffer));
   // golden cases to check that the browser reproduces Node scores exactly
   const gold = testI.slice(0, 200).map(x => ({ toks: x.t, i: x.i, scores: vsaQ(x).map(v => +v.toFixed(5)) }));
   fs.writeFileSync('data/ctx_gold.json', JSON.stringify(gold));

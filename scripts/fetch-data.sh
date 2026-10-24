@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Download everything needed to retrain and re-run the benchmarks.
-# The demo in web/ does NOT need this: its models are committed.
+# The demo in docs/ does NOT need this: its models are committed.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p data corpus

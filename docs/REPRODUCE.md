@@ -25,7 +25,7 @@ npm run bench:baselines   # Harper and Hunspell (nspell)            → results/
 ```bash
 npm run bench:context        # out-of-domain eval, about 15 min      → results/context_ext.json
 npm run bench:harper-context # Harper on the same test instances     → results/harper_ctx3.json
-npm run train:context        # trains the shipped model and writes web/ctx_meta.json, web/ctx_vectors.bin
+npm run train:context        # trains the shipped model and writes docs/ctx_meta.json, docs/ctx_vectors.bin
 ```
 
 `train:context` also writes `data/ctx_gold.json`, which the browser test uses to compare browser
