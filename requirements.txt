@@ -1,0 +1,2 @@
+codespell==2.4.3
+symspellpy==6.10.0

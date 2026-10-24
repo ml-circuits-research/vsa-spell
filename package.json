@@ -1,0 +1,29 @@
+{
+  "name": "vsa-spell",
+  "version": "0.1.0",
+  "description": "English spelling and real-word error checking with vector symbolic architectures, running in the browser without a language model.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "serve": "node scripts/serve.mjs 8080",
+    "vendor:harper": "node scripts/vendor-harper.mjs",
+    "data:fetch": "bash scripts/fetch-data.sh",
+    "data:build": "python3 src/build_corpus.py && python3 src/make_testset.py && node src/make_confusions.mjs 320",
+    "bench:spell": "node src/eval_core.mjs 1024",
+    "bench:symspell": "python3 src/eval_symspell.py",
+    "bench:baselines": "node src/eval_js_baselines.mjs harper && node src/eval_js_baselines.mjs hunspell",
+    "bench:context": "node --max-old-space-size=14000 src/context3.mjs ext",
+    "bench:harper-context": "node src/harper_ctx3.mjs",
+    "train:context": "node --max-old-space-size=14000 src/context3.mjs ext+big --export",
+    "test:browser": "node tests/test_demo.mjs"
+  },
+  "dependencies": {
+    "double-metaphone": "2.0.1",
+    "harper.js": "2.13.0"
+  },
+  "devDependencies": {
+    "dictionary-en": "4.0.0",
+    "nspell": "^2.1.5",
+    "playwright": "^1.50.0"
+  }
+}

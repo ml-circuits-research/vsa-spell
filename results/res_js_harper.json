@@ -1,0 +1,25 @@
+{
+ "Harper": {
+  "top1": 0.8523333333333334,
+  "top5": 0.931,
+  "msPerWord": 6.859187857666666,
+  "n": 3000,
+  "fails": [
+   "ressapee->reshape (want recipe)",
+   "unbouned->unbound (want unbounded)",
+   "tunges->tinges (want tongues)",
+   "coomitted->co omitted (want committed)",
+   "catchi->cat chi (want catch)",
+   "notthing->not thing (want nothing)",
+   "apealing->a pealing (want appealing)",
+   "steram->steam (want stream)",
+   "sinical->silica (want cynical)",
+   "alternatve->alternate (want alternative)",
+   "picturesk->pictures (want picturesque)",
+   "directd->direct (want directed)",
+   "fromated->fro mated (want formatted)",
+   "speficitally->specially (want specifically)",
+   "acess->ace's (want access)"
+  ]
+ }
+}

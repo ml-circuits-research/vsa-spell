@@ -1,0 +1,25 @@
+{
+ "Hunspell (nspell)": {
+  "top1": 0.789,
+  "top5": 0.865,
+  "msPerWord": 16.422948607333332,
+  "n": 3000,
+  "fails": [
+   "ressapee->reshaped (want recipe)",
+   "irreplacalbe->undefined (want irreplaceable)",
+   "unbouned->unbound (want unbounded)",
+   "colmuned->communed (want columned)",
+   "tunges->tinges (want tongues)",
+   "pairocheel->undefined (want parochial)",
+   "calucaltion->undefined (want calculation)",
+   "antiobitics->undefined (want antibiotics)",
+   "steram->steam (want stream)",
+   "sinical->finical (want cynical)",
+   "experimanented->undefined (want experimented)",
+   "alternatve->alternate (want alternative)",
+   "expeimentel->undefined (want experimental)",
+   "picturesk->pictures (want picturesque)",
+   "facist->racist (want fascist)"
+  ]
+ }
+}

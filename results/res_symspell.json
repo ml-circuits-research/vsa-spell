@@ -1,0 +1,48 @@
+{
+ "SymSpell ed2": {
+  "top1": 0.891,
+  "top5": 0.956,
+  "msPerWord": 0.5435881614685059,
+  "buildS": 4.858551025390625,
+  "fails": [
+   "ressapee->reshape (want recipe)",
+   "tunges->tunes (want tongues)",
+   "pairocheel->None (want parochial)",
+   "sinical->finical (want cynical)",
+   "picturesk->pictures (want picturesque)",
+   "directd->direct (want directed)",
+   "fromated->promoted (want formatted)",
+   "speficitally->None (want specifically)",
+   "dynically->cynically (want dynamically)",
+   "initliazed->initiated (want initialized)",
+   "novisheate->None (want novitiate)",
+   "zookeeni->None (want zucchini)",
+   "ivoice->voice (want invoice)",
+   "artistc->artist (want artistic)",
+   "catched->watched (want caught)"
+  ]
+ },
+ "SymSpell ed3": {
+  "top1": 0.9023333333333333,
+  "top5": 0.974,
+  "msPerWord": 6.635566155115764,
+  "buildS": 8.127201795578003,
+  "fails": [
+   "ressapee->reshape (want recipe)",
+   "tunges->tunes (want tongues)",
+   "sinical->finical (want cynical)",
+   "picturesk->pictures (want picturesque)",
+   "directd->direct (want directed)",
+   "fromated->promoted (want formatted)",
+   "dynically->cynically (want dynamically)",
+   "initliazed->initiated (want initialized)",
+   "zookeeni->zookeeper (want zucchini)",
+   "ivoice->voice (want invoice)",
+   "artistc->artist (want artistic)",
+   "catched->watched (want caught)",
+   "rentors->mentors (want renters)",
+   "collocweall->None (want colloquial)",
+   "despiration->respiration (want desperation)"
+  ]
+ }
+}

@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hypervector Proofreader</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Cpath d=%22M2 12 Q4 10 6 12 T10 12 T14 12%22 fill=%22none%22 stroke=%22%23c4322b%22 stroke-width=%221.6%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;0,7..72,700;1,7..72,400&family=IBM+Plex+Sans+Condensed:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a proof sheet — the manuscript on the left, the proofreader's margin of marks on the right; method and numbers below. */
+:root {
+  --paper: #f3f5f7;      /* page ground, cool proof paper */
+  --sheet: #ffffff;      /* the manuscript */
+  --ink: #1d2430;        /* body text */
+  --ink-soft: #5b6676;   /* secondary text */
+  --rule: #d5dbe3;       /* hairlines */
+  --spell: #c4322b;      /* proofreader red: spelling */
+  --context: #2357c6;    /* blue pencil: word choice */
+  --grammar: #a26a00;    /* ochre: grammar (Harper) */
+  --accent: #2357c6;
+  --chip: #e7ecf2;
+  --f-display: "Literata", Georgia, "Times New Roman", serif;
+  --f-text: "Literata", Georgia, serif;
+  --f-ui: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --s-1: 12px; --s-0: 14px; --s1: 16px; --s2: 19px; --s3: 26px; --s4: 34px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #11151b; --sheet: #181d25; --ink: #e3e7ed; --ink-soft: #9aa5b4; --rule: #2a313c;
+  --spell: #ff6b5e; --context: #79a4ff; --grammar: #e0a93a; --accent: #79a4ff; --chip: #222a35; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --paper: #11151b; --sheet: #181d25; --ink: #e3e7ed; --ink-soft: #9aa5b4; --rule: #2a313c;
+  --spell: #ff6b5e; --context: #79a4ff; --grammar: #e0a93a; --accent: #79a4ff; --chip: #222a35; color-scheme: dark }
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
+[hidden] { display: none !important; }
+body { background: var(--paper); color: var(--ink); font-family: var(--f-ui); font-size: var(--s-0); line-height: 1.5; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 28px; }
+header { display: grid; gap: 10px; }
+h1 { font-family: var(--f-display); font-weight: 700; font-size: var(--s4); line-height: 1.1; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+.lede { font-family: var(--f-text); font-size: var(--s1); color: var(--ink-soft); max-width: 64ch; margin: 0; }
+.status { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-family: var(--f-mono); font-size: var(--s-1); color: var(--ink-soft); }
+.chip { background: var(--chip); border-radius: 999px; padding: 3px 10px; max-width: 100%; overflow-wrap: anywhere; }
+.chip.live::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-soft); margin-right: 6px; vertical-align: 1px; }
+.chip.live.ok::before { background: #2f9e5b; }
+.chip.live.err::before { background: var(--spell); }
+
+.desk { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 820px) { .desk { grid-template-columns: minmax(0, 1fr); } }
+
+.sheet { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; display: grid; min-width: 0; }
+.sheet-bar { display: flex; flex-wrap: wrap; gap: 8px 14px; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--rule); font-size: var(--s-1); color: var(--ink-soft); }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { display: inline-block; width: 20px; font-style: normal; text-underline-offset: 3px; text-decoration-skip-ink: none; }
+.sw.spelling { text-decoration: underline wavy var(--spell); text-decoration-thickness: 1.5px; }
+.sw.context { text-decoration: underline double var(--context); }
+.sw.grammar { text-decoration: underline dotted var(--grammar); text-decoration-thickness: 2px; }
+
+.editor { position: relative; min-height: 340px; }
+.editor textarea, .editor .backdrop {
+  font-family: var(--f-text); font-size: 17px; line-height: 1.75; padding: 18px 20px; margin: 0; border: 0;
+  white-space: pre-wrap; overflow-wrap: break-word; word-break: normal; letter-spacing: 0; tab-size: 4; box-sizing: border-box;
+  width: 100%; height: 100%; min-height: 340px;
+}
+.editor .backdrop { position: absolute; inset: 0; color: transparent; overflow: hidden; pointer-events: none; }
+.editor textarea { position: relative; display: block; background: transparent; color: var(--ink); resize: vertical; outline: none; caret-color: var(--accent); }
+.editor textarea:focus-visible { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent); border-radius: 0 0 6px 6px; }
+mark { color: transparent; background: transparent; text-decoration-skip-ink: none; }
+mark.spelling { text-decoration: underline wavy var(--spell); text-decoration-thickness: 1.5px; text-underline-offset: 4px; background: color-mix(in srgb, var(--spell) 9%, transparent); }
+mark.context { text-decoration: underline double var(--context); text-underline-offset: 4px; background: color-mix(in srgb, var(--context) 10%, transparent); }
+mark.grammar { text-decoration: underline dotted var(--grammar); text-decoration-thickness: 2px; text-underline-offset: 4px; background: color-mix(in srgb, var(--grammar) 10%, transparent); }
+mark.active { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.strict { display: inline-flex; gap: 6px; align-items: center; }
+.strict select { font: inherit; font-size: var(--s-0); color: var(--ink); background: var(--sheet); border: 1px solid var(--rule); border-radius: 4px; padding: 4px 6px; }
+.sheet-foot { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; padding: 10px 14px; border-top: 1px solid var(--rule); font-size: var(--s-1); color: var(--ink-soft); font-family: var(--f-mono); }
+button { font: inherit; cursor: pointer; }
+.btn { font-family: var(--f-ui); font-size: var(--s-0); border: 1px solid var(--rule); background: var(--sheet); color: var(--ink); border-radius: 4px; padding: 5px 11px; }
+.btn:hover { border-color: var(--ink-soft); }
+.btn:focus-visible, .sug:focus-visible, .linkbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn[disabled] { opacity: .55; cursor: default; }
+
+.margin { display: grid; gap: 10px; min-width: 0; }
+.margin h2, section h2 { font-family: var(--f-ui); font-weight: 600; font-size: var(--s-1); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
+.margin-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.count { font-family: var(--f-mono); font-size: var(--s-1); color: var(--ink-soft); }
+.issues { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.issue { background: var(--sheet); border: 1px solid var(--rule); border-left: 3px solid var(--k); border-radius: 4px; padding: 10px 12px; display: grid; gap: 6px; cursor: pointer; }
+.issue.spelling { --k: var(--spell); } .issue.context { --k: var(--context); } .issue.grammar { --k: var(--grammar); }
+.issue:hover, .issue.active { border-color: var(--k); border-left-color: var(--k); }
+.issue-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.kind { font-size: var(--s-1); letter-spacing: .06em; text-transform: uppercase; color: var(--k); font-weight: 600; }
+.word { font-family: var(--f-text); font-size: var(--s1); }
+.word s { text-decoration-color: var(--k); text-decoration-thickness: 1.5px; }
+.why { font-size: var(--s-1); color: var(--ink-soft); }
+.sugs { display: flex; flex-wrap: wrap; gap: 6px; }
+.sug { font-family: var(--f-text); font-size: var(--s-0); border: 1px solid var(--rule); background: var(--paper); color: var(--ink); border-radius: 3px; padding: 2px 9px; }
+.sug:first-child { border-color: var(--k); }
+.sug:hover { background: var(--chip); }
+.linkbtn { background: none; border: 0; color: var(--ink-soft); font-size: var(--s-1); padding: 2px 4px; text-decoration: underline; text-underline-offset: 3px; }
+.empty { border: 1px dashed var(--rule); border-radius: 4px; padding: 16px; color: var(--ink-soft); font-size: var(--s-0); }
+.harper { display: grid; gap: 6px; border-top: 1px solid var(--rule); padding-top: 12px; font-size: var(--s-1); color: var(--ink-soft); }
+.harper label { display: flex; gap: 8px; align-items: center; color: var(--ink); font-size: var(--s-0); cursor: pointer; }
+
+section { display: grid; gap: 14px; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 20px 32px; }
+.prose { font-family: var(--f-text); font-size: 15px; line-height: 1.65; max-width: 65ch; margin: 0; }
+.prose + .prose { margin-top: 10px; }
+.prose code, td code { font-family: var(--f-mono); font-size: .88em; background: var(--chip); padding: 0 4px; border-radius: 3px; }
+.tablebox { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--sheet); }
+table { border-collapse: collapse; width: 100%; font-size: var(--s-0); }
+caption { text-align: left; padding: 10px 12px 4px; font-weight: 600; font-size: var(--s-0); }
+th, td { text-align: left; padding: 7px 12px; border-top: 1px solid var(--rule); white-space: nowrap; }
+th { font-weight: 500; color: var(--ink-soft); font-size: var(--s-1); letter-spacing: .04em; text-transform: uppercase; border-top: 0; }
+td.n { font-family: var(--f-mono); font-variant-numeric: tabular-nums; text-align: right; }
+th.n { text-align: right; }
+tr.ours td:first-child { font-weight: 600; }
+tr.ours td { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.note { font-size: var(--s-1); color: var(--ink-soft); padding: 8px 12px 10px; margin: 0; max-width: 90ch; }
+.bar { display: inline-block; height: 6px; border-radius: 3px; background: var(--accent); vertical-align: 1px; margin-right: 8px; opacity: .55; }
+tr.ours .bar { opacity: 1; }
+@media (prefers-reduced-motion: no-preference) { .issue { transition: border-color .15s; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Hypervector Proofreader</h1>
+    <p class="lede">English spelling and word-choice checking with vector symbolic architectures, running entirely in this page. No language model and no server: every check happens on your device.</p>
+    <div class="status" aria-live="polite">
+      <span class="chip live" id="st-model">Loading models…</span>
+      <span class="chip" id="st-size">—</span>
+      <span class="chip" id="st-time">—</span>
+    </div>
+  </header>
+
+  <div class="desk">
+    <div class="sheet">
+      <div class="sheet-bar">
+        <div class="legend" aria-label="Mark legend">
+          <span><i class="sw spelling">&#8195;&#8195;</i>Spelling</span>
+          <span><i class="sw context">&#8195;&#8195;</i>Word choice</span>
+          <span><i class="sw grammar">&#8195;&#8195;</i>Grammar</span>
+        </div>
+        <div class="tools">
+          <label class="strict" for="strict">Word choice
+            <select id="strict">
+              <option value="1">Careful</option>
+              <option value="0.5">Balanced</option>
+              <option value="0.25">Eager</option>
+            </select>
+          </label>
+          <button class="btn" id="btn-sample" type="button">Load sample</button>
+          <button class="btn" id="btn-clear" type="button">Clear</button>
+        </div>
+      </div>
+      <div class="editor">
+        <div class="backdrop" id="backdrop" aria-hidden="true"></div>
+        <textarea id="text" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Text to proofread"></textarea>
+      </div>
+      <div class="sheet-foot">
+        <span id="foot-left">—</span>
+        <span id="foot-right"></span>
+      </div>
+    </div>
+
+    <aside class="margin" aria-label="Corrections">
+      <div class="margin-head"><h2>Margin notes</h2><span class="count" id="count"></span></div>
+      <ul class="issues" id="issues"></ul>
+      <div class="harper">
+        <label><input type="checkbox" id="harper-on"> Add grammar rules (Harper)</label>
+        <span id="harper-status">Optional rule-based grammar layer from the Harper project. Uses a local copy in web/vendor if present, otherwise downloads about 27 MB from jsDelivr.</span>
+      </div>
+    </aside>
+  </div>
+
+  <section aria-labelledby="h-how">
+    <h2 id="h-how">How it works</h2>
+    <div class="cols">
+      <div>
+        <p class="prose"><strong>Spelling.</strong> Every dictionary word becomes a 1,024-bit hypervector: each character bigram and trigram of <code>#word#</code> is bound by XOR with position encoded by rotation, and the n-grams are bundled by majority vote. A second hypervector does the same for the word's Double Metaphone code, so <em>ressapee</em> lands near <em>recipe</em>. An unknown word is matched against all 80,000 words by Hamming distance, then reranked by frequency and edit distance.</p>
+      </div>
+      <div>
+        <p class="prose"><strong>Word choice.</strong> For each of <span id="n-sets">320</span> confusion sets (<em>form/from</em>, <em>their/there</em>, <em>quite/quiet</em> …) every member has a class hypervector learned by random indexing from about 7.7 million words: the four words on each side are bundled in, each permuted by its position. Mistakes during training are corrected by moving the context out of the wrong class and into the right one. A word is flagged only when another member fits its sentence clearly better. <em>Careful</em> uses the threshold that kept false marks near 1.5% on held-out text; <em>Balanced</em> and <em>Eager</em> halve and quarter it, catching more slips at the cost of more false marks.</p>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-bench">
+    <h2 id="h-bench">Benchmarks</h2>
+    <div class="cols" id="bench"></div>
+  </section>
+</div>
+
+<script>
+const SAMPLE = `I recieved your letter from the comittee last week. They plan to accept the proposel, but the wether may effect the schedule.
+
+It is quite important that we loose no more time. The council will meet hear on Friday, and I would rather go their in person. The new plan is better then the old one, but nobody knows weather the sight has been aproved.`;
+
+// Results measured offline with the same code (see the session transcript).
+const BENCH = {"spell": [{"name": "VSA (this page)", "ours": true, "v": [0.926, 0.9863, 15.9]}, {"name": "SymSpell, edit distance 3", "v": [0.9023, 0.974, 6.6]}, {"name": "SymSpell, edit distance 2", "v": [0.891, 0.956, 0.5]}, {"name": "Harper", "v": [0.8523, 0.931, 6.9]}, {"name": "Hunspell (nspell)", "v": [0.789, 0.865, 16.4]}], "spellNote": "3,000 real misspellings from the codespell list (for example <em>soloution</em>, <em>irresistable</em>). Weights tuned on a separate 1,000-word dev set. VSA and SymSpell share the same 80,000-word frequency dictionary; Harper and Hunspell use their own. Times are from Node on one CPU core; SymSpell ran in Python.", "ctx": [{"name": "VSA (this page)", "ours": true, "v": [0.8796, 0.5144, 0.0116]}, {"name": "Word n-grams (stupid backoff)", "v": [0.8835, 0.6596, 0.0179]}, {"name": "VSA + n-grams", "v": [0.8939, 0.6983, 0.02]}, {"name": "Harper", "v": ["—", 0.0202, 0.0047]}, {"name": "Most frequent word", "v": [0.5983, "—", "—"]}], "ctxNote": "9,198 sentences from held-out books in Norvig's <em>big.txt</em>, 320 confusion sets. Models trained on 6.8 million words of other text (Brown, Reuters, Gutenberg, Europarl, reviews, tweets), so the test is out of domain. <em>Right word</em>: picks the original word among the set. <em>Fixed</em>: after swapping in a wrong member, the checker flags it and proposes the original. <em>False marks</em>: share of correct sentences flagged. The n-gram tables hold 6 million entries; the VSA classes take 10.6 MB."};
+
+const $ = s => document.querySelector(s);
+const ta = $('#text'), bd = $('#backdrop'), list = $('#issues');
+let issues = [], vsaIssues = [], harperIssues = [], ready = false, active = -1, timer = 0, seq = 0;
+let ignore = new Set();
+try { ignore = new Set(JSON.parse(localStorage.getItem('hp-ignore') || '[]')); } catch (e) {}
+try { const d = localStorage.getItem('hp-draft'); ta.value = d && d.trim() ? d : SAMPLE; } catch (e) { ta.value = SAMPLE; }
+
+const worker = new Worker('worker.js', { type: 'module' });
+worker.onmessage = e => {
+  const m = e.data;
+  if (m.type === 'progress') $('#st-model').textContent = m.stage + '…';
+  if (m.type === 'error') { const c = $('#st-model'); c.textContent = 'Could not load models: ' + m.message; c.classList.add('err'); }
+  if (m.type === 'ready') {
+    ready = true; const c = $('#st-model'); c.classList.add('ok');
+    c.textContent = `Ready · ${m.vocab.toLocaleString()} words · ${m.enabledSets} active confusion sets`;
+    $('#st-size').textContent = `models ${(m.spellMB + m.ctxMB).toFixed(1)} MB in memory`;
+    $('#st-time').textContent = `built in ${((m.downloadMs + m.buildMs) / 1000).toFixed(1)} s`;
+    $('#n-sets').textContent = m.sets;
+    schedule(0);
+  }
+  if (m.type === 'result' && m.seq === undefined) {
+    vsaIssues = m.issues; merge();
+    $('#foot-left').textContent = `${m.nWords} words · checked in ${m.ms.toFixed(0)} ms`;
+  }
+};
+worker.postMessage({ type: 'init' });
+
+function schedule(ms = 350) { clearTimeout(timer); timer = setTimeout(runCheck, ms); }
+function runCheck() {
+  if (!ready) return;
+  worker.postMessage({ type: 'check', text: ta.value, ignore: [...ignore], scale: +$('#strict').value });
+  if ($('#harper-on').checked) runHarper();
+}
+function merge() {
+  // VSA marks win where they overlap Harper's
+  const taken = vsaIssues.map(i => [i.start, i.end]);
+  const extra = harperIssues.filter(h => !taken.some(([a, b]) => h.start < b && h.end > a) && !ignore.has(ta.value.slice(h.start, h.end).toLowerCase()));
+  issues = [...vsaIssues, ...extra].sort((a, b) => a.start - b.start);
+  render();
+}
+const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const LABEL = { spelling: 'Spelling', context: 'Word choice', grammar: 'Grammar' };
+function render() {
+  const t = ta.value; let html = '', pos = 0;
+  issues.forEach((it, k) => {
+    if (it.start < pos) return;
+    html += esc(t.slice(pos, it.start)) + `<mark class="${it.kind}${k === active ? ' active' : ''}">${esc(t.slice(it.start, it.end))}</mark>`;
+    pos = it.end;
+  });
+  bd.innerHTML = html + esc(t.slice(pos)) + '\n';
+  bd.scrollTop = ta.scrollTop;
+  $('#count').textContent = issues.length ? `${issues.length} mark${issues.length > 1 ? 's' : ''}` : '';
+  if (!issues.length) { list.innerHTML = `<li class="empty">${ready ? 'No marks. Type or paste English text and the checker runs as you write.' : 'Models are loading. Marks appear here in a few seconds.'}</li>`; return; }
+  list.innerHTML = issues.map((it, k) => `
+    <li class="issue ${it.kind}${k === active ? ' active' : ''}" data-k="${k}">
+      <div class="issue-top"><span class="kind">${LABEL[it.kind]}</span>${it.kind === 'spelling' || it.kind === 'context' ? `<button class="linkbtn" type="button" data-ignore="${k}">Ignore word</button>` : ''}</div>
+      <div class="word"><s>${esc(it.word)}</s></div>
+      ${it.why ? `<div class="why">${esc(it.why)}</div>` : it.kind === 'context' ? `<div class="why">Context fits “${esc(it.suggestions[0])}” better.</div>` : ''}
+      ${it.suggestions && it.suggestions.length ? `<div class="sugs">${it.suggestions.map((s, j) => `<button class="sug" type="button" data-k="${k}" data-j="${j}">${esc(s || '(remove)')}</button>`).join('')}</div>` : (it.kind === 'spelling' ? '<div class="why">No close match in the dictionary.</div>' : '')}
+    </li>`).join('');
+}
+list.addEventListener('click', e => {
+  const sug = e.target.closest('.sug'), ig = e.target.closest('[data-ignore]'), card = e.target.closest('.issue');
+  if (sug) { apply(+sug.dataset.k, +sug.dataset.j); return; }
+  if (ig) { const it = issues[+ig.dataset.ignore]; ignore.add(it.word.toLowerCase()); try { localStorage.setItem('hp-ignore', JSON.stringify([...ignore])); } catch (e) {} vsaIssues = vsaIssues.filter(x => x.word.toLowerCase() !== it.word.toLowerCase()); merge(); schedule(0); return; }
+  if (card) { active = +card.dataset.k; const it = issues[active]; ta.focus(); ta.setSelectionRange(it.start, it.end); render(); }
+});
+function apply(k, j) {
+  const it = issues[k], rep = it.suggestions[j];
+  ta.value = ta.value.slice(0, it.start) + rep + ta.value.slice(it.end);
+  const d = rep.length - (it.end - it.start);
+  const shift = x => x.start >= it.end ? { ...x, start: x.start + d, end: x.end + d } : x;
+  vsaIssues = vsaIssues.filter(x => x !== it).map(shift); harperIssues = harperIssues.filter(x => x !== it).map(shift);
+  active = -1; merge(); save(); schedule(150);
+}
+function save() { try { localStorage.setItem('hp-draft', ta.value); } catch (e) {} }
+ta.addEventListener('input', () => { active = -1; render(); save(); schedule(); });
+ta.addEventListener('scroll', () => { bd.scrollTop = ta.scrollTop; });
+new ResizeObserver(() => { bd.style.height = ta.offsetHeight + 'px'; }).observe(ta);
+$('#strict').addEventListener('change', () => { try { localStorage.setItem('hp-strict', $('#strict').value); } catch (e) {} schedule(0); });
+try { const v = localStorage.getItem('hp-strict'); if (v) $('#strict').value = v; } catch (e) {}
+$('#btn-sample').onclick = () => { ta.value = SAMPLE; save(); vsaIssues = harperIssues = []; merge(); schedule(0); };
+$('#btn-clear').onclick = () => { ta.value = ''; save(); vsaIssues = harperIssues = []; merge(); ta.focus(); };
+
+// ---- optional Harper layer
+let harper = null, harperLoading = null;
+// Harper: use a local copy if `npm run vendor:harper` was run, else the CDN (see docs/HARPER.md)
+const HARPER_LOCAL = './vendor/harper.js/', HARPER_CDN = 'https://cdn.jsdelivr.net/npm/harper.js@2.10.0/dist/';
+async function harperBase() { try { const r = await fetch(HARPER_LOCAL + 'index.js', { method: 'HEAD' }); if (r.ok) return HARPER_LOCAL; } catch (e) {} return HARPER_CDN; }
+async function loadHarper() {
+  if (harper) return harper;
+  if (!harperLoading) harperLoading = (async () => {
+    $('#harper-status').textContent = 'Loading Harper (about 27 MB)…';
+    const base = await harperBase();
+    // local copy: load the .wasm file directly (faster); CDN: the build with the wasm inlined
+    const { LocalLinter } = await import(base + 'index.js');
+    const { binary } = base === HARPER_LOCAL ? await import(base + 'binary.js') : await import(base + 'binaryInlined.js').then(m => ({ binary: m.binaryInlined }));
+    const l = new LocalLinter({ binary }); await l.setup();
+    harper = l; $('#harper-status').textContent = 'Harper loaded. Its spelling marks are hidden so the VSA speller stays in charge of spelling.';
+    return l;
+  })().catch(err => { harperLoading = null; $('#harper-on').checked = false; $('#harper-status').textContent = 'Harper could not load here (' + (err && err.message || err) + '). The VSA checks keep working.'; throw err; });
+  return harperLoading;
+}
+async function runHarper() {
+  const my = ++seq, text = ta.value;
+  try {
+    const l = await loadHarper(); const t0 = performance.now(); const lints = await l.lint(text);
+    if (my !== seq) return;
+    harperIssues = lints.filter(x => !/spell/i.test(x.lint_kind()) && x.lint_kind() !== 'Readability').map(x => {
+      const sp = x.span(); return { kind: 'grammar', start: sp.start, end: sp.end, word: text.slice(sp.start, sp.end), why: x.message(), suggestions: x.suggestions().map(s => s.get_replacement_text()).slice(0, 4) };
+    });
+    $('#foot-right').textContent = `Harper ${(performance.now() - t0).toFixed(0)} ms`;
+    merge();
+  } catch (e) {}
+}
+$('#harper-on').addEventListener('change', e => { if (e.target.checked) runHarper(); else { harperIssues = []; $('#foot-right').textContent = ''; merge(); } });
+
+// ---- benchmark tables
+function table(caption, head, rows, note, barCol) {
+  const max = Math.max(...rows.map(r => r.v[barCol]).filter(x => typeof x === 'number'));
+  return `<div class="tablebox"><table><caption>${caption}</caption><thead><tr>${head.map((h, i) => `<th${i ? ' class="n"' : ''}>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr${r.ours ? ' class="ours"' : ''}><td>${r.name}</td>${r.v.map((x, i) => `<td class="n">${i === barCol && typeof x === 'number' ? `<span class="bar" style="width:${Math.round(56 * x / max)}px"></span>` : ''}${typeof x === 'number' ? (r.fmt?.[i] || (y => (y * 100).toFixed(1) + '%'))(x) : x}</td>`).join('')}</tr>`).join('')}</tbody></table><p class="note">${note}</p></div>`;
+}
+if (BENCH) {
+  const ms = y => y < 1 ? y.toFixed(1) + ' ms' : y.toFixed(0) + ' ms';
+  $('#bench').innerHTML =
+    table('Misspelled words', ['System', 'Top-1', 'Top-5', 'Per word'], BENCH.spell.map(r => ({ ...r, fmt: [null, null, ms] })), BENCH.spellNote, 0) +
+    table('Real-word errors', ['System', 'Right word', 'Fixed', 'False marks'], BENCH.ctx, BENCH.ctxNote, 0);
+}
+merge();
+</script>
+
+</body>
+</html>

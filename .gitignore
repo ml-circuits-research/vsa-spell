@@ -1,0 +1,8 @@
+node_modules/
+corpus/
+data/*
+!data/confusions.json
+web/vendor/
+tests/out/
+__pycache__/
+.DS_Store
