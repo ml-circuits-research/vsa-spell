@@ -28,8 +28,9 @@ cd vsa-spell
 npm run serve          # no install needed for the demo
 ```
 
-Open <http://127.0.0.1:8080/>. Proofreading loads about 12 MB of models and builds 80,000 word
-hypervectors in about 2 seconds; the Interpret tab loads 17 MB more the first time it opens.
+Open <http://127.0.0.1:8080/>. Proofreading downloads about 6 MB of models and builds 80,000
+word hypervectors in about 2 seconds; the Interpret tab downloads about 8 MB more the first time
+it opens. Models are kept in the browser's Cache Storage, so later visits download nothing.
 
 A local web server is required: browsers will not start the module Web Worker from a `file://` URL.
 `python3 -m http.server 8080 -d docs` works as well.
@@ -60,12 +61,13 @@ troubleshooting: [docs/HARPER.md](docs/HARPER.md).
 | Layer | Method | Size in memory |
 |---|---|---|
 | Spelling | 80,000 words as 1,024-bit hypervectors (character bigrams + trigrams, XOR binding, rotation for position, majority bundling) plus a Double Metaphone hypervector; Hamming search, rerank by frequency and edit distance | 20.5 MB |
-| Word choice | 320 confusion sets; one int8 class hypervector (D = 16,384) per word, learned by sparse random indexing over ±4 words of context with HDC retraining | 10.6 MB |
+| Word choice | 320 confusion sets; one class hypervector (D = 16,384, 4 bits) per word, learned by sparse random indexing over ±4 words of context with HDC retraining | 5.3 MB download, 10.6 MB in memory |
 | Grammar (statistical) | part-of-speech tag bigrams and P(tag \| word) from the tagged Brown corpus, Viterbi | 0.9 MB file |
-| Sentence context | word-context hypervectors for the 30,000 most frequent words (D = 512, int8) | 15.4 MB |
+| Sentence context | word-context hypervectors for the 30,000 most frequent words (D = 1,024, 2 bits) | 7.7 MB download, 30.7 MB in memory |
 | Grammar (optional) | Harper's rule-based linter (its spelling rules are hidden) | about 27 MB |
 
-Download sizes: proofreading 12 MB, interpretation 17 MB more, Harper 27 MB more (optional).
+Download sizes: proofreading 6 MB, interpretation 8 MB more, Harper 27 MB more (optional).
+The hypervectors are shipped at 4 and 2 bits; see [Model size](docs/BENCHMARKS.md#model-size).
 
 How it works in detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
@@ -91,7 +93,7 @@ other text (out of domain).
 | VSA + n-grams | 89.4% | 69.8% | 2.0% |
 | Harper | — | 2.0% | 0.5% |
 
-The VSA context model is on par with word n-grams at picking the right word and uses 10.6 MB
+The VSA context model is on par with word n-grams at picking the right word and ships in 5.3 MB
 instead of about 6 million n-gram entries; n-grams are still better at flagging errors at a low
 false-alarm rate. Full numbers, earlier rounds and caveats: [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
 
@@ -99,10 +101,10 @@ Sentence interpretation (details in [docs/DECODER.md](docs/DECODER.md)):
 
 | Test | System | Sentences right | False changes |
 |---|---|---:|---:|
-| 1,000 general sentences, 0–2 errors | **Decoder** | **64.3%** | 0.58 / 100 words |
-| | Proofread mode | 49.8% | 1.11 |
+| 1,000 general sentences, 0–2 errors | **Decoder** | **64.7%** | 0.64 / 100 words |
+| | Proofread mode | 49.3% | 1.16 |
 | | Harper, first suggestions | 43.2% | 4.03 |
-| 600 agent commands, 0–2 typos | **Decoder, own dictionary + examples** | **99.3%** | 0 |
+| 600 agent commands, 0–2 typos | **Decoder, own dictionary + examples** | **99.7%** | 0 |
 | | Spelling only, own dictionary | 92.8% | 0 |
 | | Spelling only, general dictionary | 56.8% | 0 |
 

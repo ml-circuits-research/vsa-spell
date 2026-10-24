@@ -1,5 +1,5 @@
 // Runs the VSA models off the main thread.
-import { Speller, ContextModel } from './vsa-core.js';
+import { Speller, ContextModel, unpackModel } from './vsa-core.js';
 import { SentenceDecoder } from './decoder.js';
 import { DECODER_WEIGHTS, DOMAIN_WEIGHTS } from './decoder-weights.js';
 
@@ -8,24 +8,44 @@ let speller = null, ctx = null, entries = null;
 let grammar = null, profiles = null, preset = null, decoder = null, interpLoading = null;
 const post = (type, data) => self.postMessage({ type, ...data });
 
+// Models are cached in Cache Storage so a second visit loads nothing from the network.
+// Bump MODEL_VERSION whenever a model file changes; old caches are deleted.
+const MODEL_VERSION = 'vsa-models-2026-10-24b';
+let fromCache = 0, fromNetwork = 0;
+async function cachedFetch(url) {
+  let cache = null;
+  try {
+    cache = await caches.open(MODEL_VERSION);
+    const hit = await cache.match(url);
+    if (hit) { fromCache++; return hit; }
+  } catch (e) { cache = null; } // no Cache Storage (file://, some sandboxes): plain fetch
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(url + ' ' + res.status);
+  fromNetwork++;
+  if (cache) try { await cache.put(url, res.clone()); } catch (e) {}
+  return res;
+}
+(async () => { try { for (const k of await caches.keys()) if (k.startsWith('vsa-models-') && k !== MODEL_VERSION) await caches.delete(k); } catch (e) {} })();
+
 async function init() {
   const t0 = performance.now();
   post('progress', { stage: 'Downloading models' });
   const [wordsTxt, meta, vecBuf] = await Promise.all([
-    fetch('words.txt').then(r => { if (!r.ok) throw new Error('words.txt ' + r.status); return r.text(); }),
-    fetch('ctx_meta.json').then(r => { if (!r.ok) throw new Error('ctx_meta.json ' + r.status); return r.json(); }),
-    fetch('ctx_vectors.bin').then(r => { if (!r.ok) throw new Error('ctx_vectors.bin ' + r.status); return r.arrayBuffer(); }),
+    cachedFetch('words.txt').then(r => r.text()),
+    cachedFetch('ctx_meta.json').then(r => r.json()),
+    cachedFetch('ctx_vectors.bin').then(r => r.arrayBuffer()),
   ]);
   const tDl = performance.now();
   post('progress', { stage: 'Encoding 80,000 words as hypervectors' });
   entries = wordsTxt.trim().split('\n').map(l => { const [w, c] = l.split(' '); return [w, +c]; });
   speller = new Speller({ D: SPELL.D });
   speller.build(entries);
-  ctx = new ContextModel(meta, new Int8Array(vecBuf));
+  const ctxVec = unpackModel(vecBuf, meta);
+  ctx = new ContextModel(meta, ctxVec);
   const t1 = performance.now();
   post('ready', {
-    downloadMs: tDl - t0, buildMs: t1 - tDl, vocab: entries.length,
-    spellMB: speller.bytes() / 1e6, ctxMB: vecBuf.byteLength / 1e6, sets: meta.sets.length, enabledSets: meta.enabled.length, ctxWords: meta.words.length, D: meta.D,
+    downloadMs: tDl - t0, buildMs: t1 - tDl, vocab: entries.length, cached: fromCache > 0 && fromNetwork === 0,
+    memMB: (speller.bytes() + ctxVec.byteLength) / 1e6, downloadMB: (wordsTxt.length + vecBuf.byteLength) / 1e6, sets: meta.sets.length, enabledSets: meta.enabled.length, ctxWords: meta.words.length, D: meta.D,
   });
 }
 
@@ -77,11 +97,12 @@ async function interpInit() {
   if (!interpLoading) interpLoading = (async () => {
     const t0 = performance.now();
     const [g, pm, pb, pr] = await Promise.all([
-      fetch('grammar.json').then(r => r.json()), fetch('profiles_meta.json').then(r => r.json()),
-      fetch('profiles.bin').then(r => { if (!r.ok) throw new Error('profiles.bin ' + r.status); return r.arrayBuffer(); }),
-      fetch('presets/agent-commands.json').then(r => r.json()),
+      cachedFetch('grammar.json').then(r => r.json()), cachedFetch('profiles_meta.json').then(r => r.json()),
+      cachedFetch('profiles.bin').then(r => r.arrayBuffer()),
+      cachedFetch('presets/agent-commands.json').then(r => r.json()),
     ]);
-    grammar = g; profiles = { meta: pm, int8: new Int8Array(pb) }; preset = pr;
+    grammar = g; preset = pr;
+    profiles = { meta: pm, int8: unpackModel(pb, pm), words: entries.slice(0, pm.N).map(e => e[0]) };
     return { loadMs: performance.now() - t0, profilesMB: pb.byteLength / 1e6 };
   })();
   return interpLoading;

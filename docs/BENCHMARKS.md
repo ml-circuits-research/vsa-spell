@@ -86,12 +86,43 @@ See [DECODER.md](DECODER.md) for the method and the full tables. Summary:
 
 - General English, 1,000 held-out `big.txt` sentences (20% clean, 48% one error, 32% two errors;
   errors are 45% typos, 30% confused words, 25% grammar): the decoder gets 64.3% of sentences
-  exactly right (proofread mode 49.8%, Harper 43.2%), fixes 66.9% of errors and changes 0.58 of
+  exactly right (proofread mode 49.3%, Harper 43.2%), fixes 68.1% of errors and changes 0.64 of
   every 100 correct words. Removing the grammar layer costs 7 points of sentence accuracy.
-- Agent commands with their own 153-word dictionary and 150 example commands: 99.3% of 600 test
+- Agent commands with their own 153-word dictionary and 150 example commands: 99.7% of 600 test
   commands right with no false changes, against 92.8% for spelling alone over the same dictionary.
 
 Weights were tuned by random search on 250 dev sentences (`results/decoder_weights.json`).
+
+## Model size
+
+The shipped hypervectors were measured at lower precision on the 9,198 real-word test instances
+(`src/quant_eval.mjs`, `results/quantization.json`).
+
+Confusion-set classes (D = 16,384, 649 words), shipped model:
+
+| Bits | Size | Right word | Fixed (Careful) | False marks |
+|---:|---:|---:|---:|---:|
+| 8 | 10.6 MB | 90.5% | 62.0% | 1.57% |
+| **4 (shipped)** | **5.3 MB** | **90.1%** | **61.7%** | **1.53%** |
+| 2 | 2.7 MB | 89.2% | 43.0% | 1.12% |
+| 1 | 1.3 MB | 87.4% | 13.8% | 0.42% |
+
+At 2 and 1 bits the scores shrink, so the Careful threshold becomes too strict; recalibrating it
+would recover part of the detection rate.
+
+Word-context profiles (30,000 words), right word using the profiles alone:
+
+| D | 8 bits | 4 bits | 2 bits | 1 bit |
+|---:|---:|---:|---:|---:|
+| 512 | 77.6% (15.4 MB) | 76.7% (7.7) | 78.7% (3.8) | 73.6% (1.9) |
+| **1,024** | 78.2% (30.7) | 77.3% (15.4) | **80.8% (7.7, shipped)** | 74.4% (3.8) |
+| 2,048 | 80.0% (61.4) | 78.6% (30.7) | 83.0% (15.4) | 73.7% (7.7) |
+
+The 2-bit code uses four non-uniform levels (±1, ±3 at ±0.98σ). It beats 8 bits because it
+clips the few large components that frequent context words create, a saturation effect similar to
+PMI weighting. Uniform 4-bit and 1-bit codes do not have it.
+
+Download, before → after: proofreading 12 → 6 MB, interpretation 17 → 8 MB.
 
 ## Browser
 

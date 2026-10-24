@@ -12,11 +12,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SentenceDecoder } from '../docs/decoder.js';
-import { ContextModel, Speller } from '../docs/vsa-core.js';
+import { ContextModel, Speller, unpackModel } from '../docs/vsa-core.js';
 import { DECODER_WEIGHTS, DOMAIN_WEIGHTS } from '../docs/decoder-weights.js';
 
 const DOCS = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'docs');
-const bin = f => { const b = fs.readFileSync(path.join(DOCS, f)); return new Int8Array(b.buffer, b.byteOffset, b.length); };
+const bin = f => fs.readFileSync(path.join(DOCS, f));
 const json = f => JSON.parse(fs.readFileSync(path.join(DOCS, f), 'utf8'));
 let shared = null;
 function models() {
@@ -24,8 +24,8 @@ function models() {
     const general = fs.readFileSync(path.join(DOCS, 'words.txt'), 'utf8').trim().split('\n').map(l => { const [w, c] = l.split(' '); return [w, +c]; });
     shared = {
       general, freq: new Map(general), grammar: json('grammar.json'),
-      profiles: { meta: json('profiles_meta.json'), int8: bin('profiles.bin') },
-      confusion: new ContextModel(json('ctx_meta.json'), bin('ctx_vectors.bin')),
+      profiles: (() => { const meta = json('profiles_meta.json'); return { meta, int8: unpackModel(bin('profiles.bin'), meta), words: general.slice(0, meta.N).map(e => e[0]) }; })(),
+      confusion: (() => { const meta = json('ctx_meta.json'); return new ContextModel(meta, unpackModel(bin('ctx_vectors.bin'), meta)); })(),
     };
   }
   return shared;

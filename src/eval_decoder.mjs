@@ -4,10 +4,10 @@
 // Usage: node src/eval_decoder.mjs [--tune N] [--n 1000] [--harper]
 import fs from 'fs';
 import { SentenceDecoder, DEFAULT_WEIGHTS, morphVariants } from '../docs/decoder.js';
-import { ContextModel, Speller, mulberry32 } from '../docs/vsa-core.js';
+import { ContextModel, Speller, mulberry32, unpackModel } from '../docs/vsa-core.js';
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i < 0 ? d : (process.argv[i + 1] && !process.argv[i + 1].startsWith('--') ? process.argv[i + 1] : true); };
-const TUNE = +arg('--tune', 0), NTEST = +arg('--n', 1000), HARPER = !!arg('--harper', false);
+const TUNE = +arg('--tune', 0), NTEST = +arg('--n', 1000), HARPER = !!arg('--harper', false), QUICK = !!arg('--quick', false);
 const rng = mulberry32(2024); const rf = () => rng() / 4294967296; const pick = a => a[Math.floor(rf() * a.length)];
 
 // ---- models
@@ -16,8 +16,8 @@ const dictSet = new Set(dict.map(d => d[0]));
 const grammar = JSON.parse(fs.readFileSync('docs/grammar.json'));
 const pm = JSON.parse(fs.readFileSync('docs/profiles_meta.json')), pb = fs.readFileSync('docs/profiles.bin');
 const cm = JSON.parse(fs.readFileSync('docs/ctx_meta.json')), cb = fs.readFileSync('docs/ctx_vectors.bin');
-const profiles = { meta: pm, int8: new Int8Array(pb.buffer, pb.byteOffset, pb.length) };
-const confusion = new ContextModel(cm, new Int8Array(cb.buffer, cb.byteOffset, cb.length));
+const profiles = { meta: pm, int8: unpackModel(pb, pm), words: fs.readFileSync('docs/words.txt', 'utf8').trim().split('\n').slice(0, pm.N).map(l => l.split(' ')[0]) };
+const confusion = new ContextModel(cm, unpackModel(cb, cm));
 const speller = new Speller({ D: 1024 }); speller.build(dict);
 const make = (weights, opts = {}) => new SentenceDecoder({ dictionary: dict, grammar, profiles: opts.noProfiles ? null : profiles, confusion: opts.noConfusion ? null : confusion, weights, speller });
 
@@ -98,7 +98,7 @@ const proofreader = items => items.map(it => { const w = spellingOnly([it])[0]; 
 
 // ---- tuning (random search around the defaults, on dev)
 let W = { ...DEFAULT_WEIGHTS };
-if (fs.existsSync('results/decoder_weights.json') && !TUNE) W = { ...W, ...JSON.parse(fs.readFileSync('results/decoder_weights.json')) };
+if (fs.existsSync('results/decoder_weights.json')) W = { ...W, ...JSON.parse(fs.readFileSync('results/decoder_weights.json')) };
 if (TUNE) {
   const obj = r => r.fixed - 0.05 * r.falseChangesPer100 + 0.5 * r.sentence;
   let best = { W, r: score(DEV, runDecoder(make(W), DEV)) }; best.o = obj(best.r);
@@ -122,10 +122,10 @@ add('spelling only (VSA top-1)', spellingOnly(TEST));
 add('proofreader page (careful)', proofreader(TEST));
 let t0 = performance.now();
 add('decoder (full)', runDecoder(make(W), TEST)); res.msPerSentence = +((performance.now() - t0) / TEST.length).toFixed(1);
-add('decoder, no grammar', runDecoder(make({ ...W, grammar: 0, article: 0 }), TEST));
-add('decoder, no context profiles', runDecoder(make(W, { noProfiles: true }), TEST));
-add('decoder, no confusion classes', runDecoder(make(W, { noConfusion: true }), TEST));
-add('decoder, grammar + spelling only', runDecoder(make({ ...W, profile: 0, confusion: 0 }, { noProfiles: true, noConfusion: true }), TEST));
+if (!QUICK) add('decoder, no grammar', runDecoder(make({ ...W, grammar: 0, article: 0 }), TEST));
+if (!QUICK) add('decoder, no context profiles', runDecoder(make(W, { noProfiles: true }), TEST));
+if (!QUICK) add('decoder, no confusion classes', runDecoder(make(W, { noConfusion: true }), TEST));
+if (!QUICK) add('decoder, grammar + spelling only', runDecoder(make({ ...W, profile: 0, confusion: 0 }, { noProfiles: true, noConfusion: true }), TEST));
 if (HARPER) {
   const { LocalLinter } = await import('harper.js'); const { binary } = await import('harper.js/binary');
   const L = new LocalLinter({ binary }); await L.setup();
@@ -140,5 +140,5 @@ if (HARPER) {
   add('Harper (first suggestions)', out);
 }
 res.examples = TEST.slice(0, 12).map(it => ({ input: it.text, decoded: make(W).decode(it.text).best.text, errs: it.errs }));
-fs.writeFileSync('results/decoder_general.json', JSON.stringify(res, null, 1));
+if (!QUICK) fs.writeFileSync('results/decoder_general.json', JSON.stringify(res, null, 1));
 console.log(`${res.msPerSentence} ms/sentence`);

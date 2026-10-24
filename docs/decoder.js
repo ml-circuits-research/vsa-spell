@@ -129,8 +129,8 @@ export class SentenceDecoder {
   }
 
   // ----- VSA context profiles (general text)
-  _loadProfiles({ meta, int8 }) {
-    const row = new Map(meta.words.map((w, k) => [w, k])); const POS = []; for (let p = -meta.W; p <= meta.W; p++) if (p) POS.push(p);
+  _loadProfiles({ meta, int8, words }) {
+    const row = new Map((meta.words || words).map((w, k) => [w, k])); const POS = []; for (let p = -meta.W; p <= meta.W; p++) if (p) POS.push(p);
     return { ...meta, row, Q: int8, POS, SH: POS.map(p => ((p + meta.shiftOff) * meta.shiftMul) % meta.D), PW: POS.map(p => 1 / Math.abs(p)), iv: new Map() };
   }
   _iv(P, w) {

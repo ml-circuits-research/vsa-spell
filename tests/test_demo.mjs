@@ -25,9 +25,9 @@ for (const [name, vp, scheme] of [['desktop', { width: 1280, height: 1000 }, 'li
   if (name === 'desktop') {
     // parity: run the browser ContextModel on Node's golden cases
     if (GOLD) out.parity = await page.evaluate(async (gold) => {
-      const { ContextModel } = await import('./vsa-core.js');
+      const { ContextModel, unpackModel } = await import('./vsa-core.js');
       const [meta, buf] = await Promise.all([fetch('ctx_meta.json').then(r => r.json()), fetch('ctx_vectors.bin').then(r => r.arrayBuffer())]);
-      const m = new ContextModel(meta, new Int8Array(buf)); let maxDiff = 0;
+      const m = new ContextModel(meta, unpackModel(buf, meta)); let maxDiff = 0;
       for (const g of gold) { const s = m.scores(g.toks, g.i); s.forEach((v, k) => { maxDiff = Math.max(maxDiff, Math.abs(v - g.scores[k])); }); }
       return { cases: gold.length, maxDiff };
     }, GOLD);
@@ -51,6 +51,9 @@ for (const [name, vp, scheme] of [['desktop', { width: 1280, height: 1000 }, 'li
     out.interpretCommands = await page.textContent('#i-best');
     await page.click('#tab-proof');
     out.harper = { status: await page.textContent('#harper-status'), grammarMarks: await page.$$eval('.issue.grammar', els => els.map(e => e.querySelector('.word').textContent.trim() + ' -> ' + [...e.querySelectorAll('.sug')].map(s => s.textContent).join('|'))) };
+    // second visit: models come from Cache Storage
+    await page.reload(); await page.waitForFunction(() => document.querySelector('#st-model').classList.contains('ok'), null, { timeout: 60000 });
+    out.secondVisit = await page.textContent('#st-time');
   }
   await page.close();
 }

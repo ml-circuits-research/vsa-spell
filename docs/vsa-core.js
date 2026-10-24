@@ -149,3 +149,41 @@ export class ContextModel {
     return margin > this.tau * scale ? { suggestion: cands[best], margin, alternatives: cands.filter(c => c !== w) } : null;
   }
 }
+
+// ------------------------------------------------------ packed hypervector matrices
+// Rows of class / profile hypervectors are shipped at 8, 4 or 2 bits per element:
+//   8: int8, value × scale
+//   4: two's-complement nibbles in −7..7 (uniform, max-scaled), two per byte
+//   2: codes 0..3 → −3, −1, +1, +3 (non-uniform, thresholds at ±0.98σ; clips outliers), four per byte
+// unpackRows returns an Int8Array with the integer levels; multiply by the row's scale.
+export function unpackRows(bytes, count, bits) {
+  const u = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes.buffer || bytes, bytes.byteOffset || 0, bytes.byteLength);
+  if (bits === 8) return new Int8Array(u.buffer, u.byteOffset, count);
+  const out = new Int8Array(count);
+  if (bits === 4) for (let i = 0; i < count; i++) { const b = u[i >> 1], n = (i & 1) ? b >> 4 : b & 15; out[i] = n > 7 ? n - 16 : n; }
+  else if (bits === 2) { const L = [-3, -1, 1, 3]; for (let i = 0; i < count; i++) out[i] = L[(u[i >> 2] >> ((i & 3) * 2)) & 3]; }
+  else throw new Error('unsupported bits: ' + bits);
+  return out;
+}
+// quantise row-major float (or int8 × scale) rows; returns packed bytes and per-row scales
+export function quantizeRows(get, rows, D, bits) {
+  const scales = new Float32Array(rows), n = rows * D;
+  const packed = new Uint8Array(bits === 8 ? n : Math.ceil(n * bits / 8));
+  const q8 = bits === 8 ? new Int8Array(packed.buffer) : null;
+  for (let r = 0; r < rows; r++) {
+    let mx = 0, v2 = 0; for (let d = 0; d < D; d++) { const x = get(r, d); mx = Math.max(mx, Math.abs(x)); v2 += x * x; }
+    if (bits === 2) {
+      const sd = Math.sqrt(v2 / D) || 1, t = 0.9816 * sd; scales[r] = sd * 0.5025;
+      for (let d = 0; d < D; d++) { const x = get(r, d), c = x >= 0 ? (x > t ? 3 : 2) : (x < -t ? 0 : 1), i = r * D + d; packed[i >> 2] |= c << ((i & 3) * 2); }
+    } else {
+      const L = bits === 8 ? 127 : 7, s = mx / L || 1; scales[r] = s;
+      for (let d = 0; d < D; d++) { const v = Math.round(get(r, d) / s), i = r * D + d; if (bits === 8) q8[i] = v; else packed[i >> 1] |= (v & 15) << ((i & 1) * 4); }
+    }
+  }
+  return { packed, scales };
+}
+// unpack a model file given its meta (meta.bits defaults to 8; rows = meta.words?.length ?? meta.N)
+export function unpackModel(bytes, meta) {
+  const rows = meta.words ? meta.words.length : meta.N;
+  return unpackRows(bytes, rows * meta.D, meta.bits || 8);
+}

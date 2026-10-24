@@ -3,7 +3,7 @@
 // Test commands are disjoint from the examples. Usage: node src/eval_commands.mjs
 import fs from 'fs';
 import { SentenceDecoder, DEFAULT_WEIGHTS } from '../docs/decoder.js';
-import { ContextModel, Speller, mulberry32 } from '../docs/vsa-core.js';
+import { ContextModel, Speller, mulberry32, unpackModel } from '../docs/vsa-core.js';
 
 const rng = mulberry32(99); const rf = () => rng() / 4294967296; const pick = a => a[Math.floor(rf() * a.length)];
 const general = fs.readFileSync('docs/words.txt', 'utf8').trim().split('\n').map(l => { const [w, c] = l.split(' '); return [w, +c]; });
@@ -11,8 +11,8 @@ const genSet = new Set(general.map(g => g[0]));
 const grammar = JSON.parse(fs.readFileSync('docs/grammar.json'));
 const pm = JSON.parse(fs.readFileSync('docs/profiles_meta.json')), pb = fs.readFileSync('docs/profiles.bin');
 const cm = JSON.parse(fs.readFileSync('docs/ctx_meta.json')), cb = fs.readFileSync('docs/ctx_vectors.bin');
-const profiles = { meta: pm, int8: new Int8Array(pb.buffer, pb.byteOffset, pb.length) };
-const confusion = new ContextModel(cm, new Int8Array(cb.buffer, cb.byteOffset, cb.length));
+const profiles = { meta: pm, int8: unpackModel(pb, pm), words: fs.readFileSync('docs/words.txt', 'utf8').trim().split('\n').slice(0, pm.N).map(l => l.split(' ')[0]) };
+const confusion = new ContextModel(cm, unpackModel(cb, cm));
 const preset = JSON.parse(fs.readFileSync('docs/presets/agent-commands.json'));
 const { dev, test } = JSON.parse(fs.readFileSync('data/commands_eval.json'));
 const domSet = new Set(preset.dictionary.map(d => d[0]));

@@ -41,15 +41,15 @@ Open the page's **Interpret a sentence** tab, or import the module directly:
 
 ```js
 import { SentenceDecoder } from './decoder.js';
-import { ContextModel } from './vsa-core.js';
+import { ContextModel, unpackModel } from './vsa-core.js';
 import { DECODER_WEIGHTS, DOMAIN_WEIGHTS } from './decoder-weights.js';
 
 const dec = new SentenceDecoder({
   dictionary,                 // [[word, count], …]
   examples,                   // ['open the file', …]  (optional)
   grammar,                    // await (await fetch('grammar.json')).json()
-  profiles: { meta, int8 },   // profiles_meta.json + new Int8Array(profiles.bin)   (optional)
-  confusion,                  // new ContextModel(ctx_meta, new Int8Array(ctx_vectors.bin)) (optional)
+  profiles: { meta, int8: unpackModel(profilesBin, meta), words },  // words = first meta.N lines of words.txt (optional)
+  confusion,                  // new ContextModel(ctxMeta, unpackModel(ctxBin, ctxMeta))   (optional)
   weights: { ...DECODER_WEIGHTS, ...(examples.length ? DOMAIN_WEIGHTS : {}) },
 });
 ```
@@ -65,7 +65,7 @@ score = Σ channel(xi → wi)                  spelling: VSA similarity (letters
       + freq     · Σ log-frequency(wi)
       + grammar  · Viterbi log-probability   part-of-speech tag bigrams and P(tag | word), Brown corpus
       + article  · [a/an agrees with the next word]
-      + profile  · Σ context(wi | wi±1..4)   general word-context hypervectors (30,000 words, D = 512)
+      + profile  · Σ context(wi | wi±1..4)   general word-context hypervectors (30,000 words, D = 1,024, 2 bits)
       + domain   · Σ context(wi | wi±1..4)   hypervectors learned from your example sentences
       + confusion· Σ class(wi | wi±1..4)     the trained confusion-set classes (form/from …)
 ```
@@ -90,14 +90,16 @@ dev sentences (`npm run tune:decoder`). Pass `weights` to override any of them:
 |---|---:|---|
 | `sim`, `edit` | 2.04, 1.36 | how strongly spelling distance counts |
 | `keepUnknown` | −9 | cost of leaving an unknown word as typed |
-| `nearWord` | −4.49 | cost of changing a real word into a word one edit away |
-| `confusionSwap`, `morph` | −1.79, −3.48 | cost of switching to a confusable word or another form |
-| `freq`, `grammar`, `article` | 0.6, 0.355, 6.16 | priors |
-| `profile`, `domain`, `confusion` | 2.98, 3, 1.05 | context terms |
+| `nearWord` | −5.65 | cost of changing a real word into a word one edit away |
+| `confusionSwap`, `morph` | −0.90, −3.13 | cost of switching to a confusable word or another form |
+| `freq`, `grammar`, `article` | 0.6, 0.26, 7.65 | priors |
+| `profile`, `domain`, `confusion` | 5.5, 3, 0.56 | context terms |
 
 Raising the three costs makes the decoder more conservative (fewer false changes, fewer fixes).
 
 ## Results
+
+Results with the shipped (4-bit / 2-bit) models and weights retuned for them.
 
 General English, 1,000 held-out sentences from `big.txt` (80% with one or two injected errors:
 typos, confused words, agreement and article errors):
@@ -106,12 +108,12 @@ typos, confused words, agreement and article errors):
 |---|---:|---:|---:|---:|---:|---:|
 | No correction | 23.0% | — | — | — | — | — |
 | Spelling only (VSA top-1) | 43.0% | 35.1% | 76.2% | 0% | 0% | 0 |
-| Proofread mode (careful) | 49.8% | 53.9% | 76.4% | 59.9% | 0% | 1.11 / 100 words |
+| Proofread mode (careful) | 49.3% | 54.1% | 76.4% | 60.5% | 0% | 1.16 / 100 words |
 | Harper, first suggestions | 43.2% | 36.5% | 61.4% | 7.2% | 26.2% | 4.03 / 100 words |
-| **Decoder (all terms)** | **64.3%** | **66.9%** | **84.0%** | **71.9%** | 25.4% | 0.58 / 100 words |
-| Decoder without grammar | 57.3% | 58.3% | 83.4% | 62.0% | 2.0% | 0.38 |
-| Decoder without context profiles | 60.3% | 62.3% | 82.2% | 62.3% | 21.7% | 0.62 |
-| Decoder without confusion classes | 49.3% | 44.1% | 82.0% | 4.8% | 20.9% | 0.02 |
+| **Decoder (all terms)** | **64.7%** | **68.1%** | **85.5%** | **76.3%** | 21.7% | 0.64 / 100 words |
+| Decoder without grammar | 58.0% | 60.7% | 84.8% | 68.3% | 1.2% | 0.50 |
+| Decoder without context profiles | 61.1% | 62.9% | 82.6% | 66.8% | 17.6% | 0.59 |
+| Decoder without confusion classes | 47.5% | 42.2% | 82.4% | 2.7% | 14.8% | 0.06 |
 
 Agent commands, own dictionary (153 words) and 150 example commands; 600 test commands, disjoint
 from the examples, with one or two typos each:
@@ -119,10 +121,10 @@ from the examples, with one or two typos each:
 | System | Commands right | Typos fixed | False changes |
 |---|---:|---:|---:|
 | Spelling only, general dictionary | 56.8% | 60.3% | 0 |
-| Decoder, general dictionary | 60.8% | 67.6% | 0.74 / 100 words |
+| Decoder, general dictionary | 63.3% | 69.8% | 0.94 / 100 words |
 | Spelling only, command dictionary | 92.8% | 94.2% | 0 |
-| Decoder, command dictionary | 92.8% | 94.3% | 0 |
-| **Decoder, command dictionary + examples** | **99.3%** | **99.5%** | **0** |
+| Decoder, command dictionary | 96.5% | 97.2% | 0 |
+| **Decoder, command dictionary + examples** | **99.7%** | **99.7%** | **0** |
 
 Decoding takes about 60 ms per sentence with the general dictionary and 5 ms with the command
 dictionary (Node, one core).
@@ -130,8 +132,8 @@ dictionary (Node, one core).
 ## Is the grammar enough?
 
 No, not for grammar errors in open text. The part-of-speech layer is what lets the decoder fix any
-agreement errors at all (2% → 25% of them), and it adds 7 points of whole-sentence accuracy, but
-three out of four grammar errors still pass. Reasons:
+agreement errors at all (1% → 22% of them), and it adds 7 points of whole-sentence accuracy, but
+about four out of five grammar errors still pass. Reasons:
 
 - Tag bigrams see one neighbour. *The list of items are long* needs the subject three words back.
 - Brown's tags mark agreement for pronouns and *be/have/do*, but many errors (*he go* → *goes* or

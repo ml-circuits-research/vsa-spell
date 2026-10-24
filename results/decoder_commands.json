@@ -27,28 +27,28 @@
    "errors": 755
   },
   "decoder, general 80k dictionary": {
-   "sentence": 0.6083,
-   "fixed": 0.6755,
-   "falseChangesPer100": 0.74,
+   "sentence": 0.6333,
+   "fixed": 0.698,
+   "falseChangesPer100": 0.94,
    "n": 600,
    "errors": 755
   },
   "decoder, command dictionary": {
-   "sentence": 0.9283,
-   "fixed": 0.943,
+   "sentence": 0.965,
+   "fixed": 0.9722,
    "falseChangesPer100": 0,
    "n": 600,
    "errors": 755
   },
   "decoder, command dictionary + examples": {
-   "sentence": 0.9933,
-   "fixed": 0.9947,
+   "sentence": 0.9967,
+   "fixed": 0.9974,
    "falseChangesPer100": 0,
    "n": 600,
    "errors": 755
   }
  },
- "msPerSentence": 4.9,
+ "msPerSentence": 5.4,
  "examples": [
   {
    "input": "share the presentation repports with the client",

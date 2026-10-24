@@ -4,7 +4,7 @@
 // frequent word, so the decoder can compare any candidates at a position.
 // Usage: node src/train_profiles.mjs <N words> <D> [--eval] [--export]
 import fs from 'fs';
-import { mulberry32, hash32 } from '../docs/vsa-core.js';
+import { mulberry32, hash32, quantizeRows } from '../docs/vsa-core.js';
 
 const N = +(process.argv[2] || 30000), D = +(process.argv[3] || 1024);
 const EVAL = process.argv.includes('--eval'), EXPORT = process.argv.includes('--export');
@@ -95,7 +95,12 @@ if (EVAL) {
   console.log(`choice accuracy (profiles, no prior) ${(ok / n).toFixed(4)}  prior-only ${(okPrior / n).toFixed(4)}  n=${n} covered=${(covered / n).toFixed(3)}`);
 }
 if (EXPORT) {
-  fs.writeFileSync('docs/profiles.bin', Buffer.from(Q.buffer));
-  fs.writeFileSync('docs/profiles_meta.json', JSON.stringify({ N, D, K, W, seed: SEED, shiftMul: 7919, shiftOff: 16, words: vocab, scales: Array.from(scale, x => +x.toPrecision(6)), logCount: Array.from(cnt, c => +Math.log(c + 1).toFixed(3)) }));
-  console.log(`exported docs/profiles.bin ${(Q.byteLength / 1e6).toFixed(1)} MB`);
+  // ship at --bits (default 2: non-uniform 4 levels, which also beat int8 on the choice test,
+  // see src/quant_eval.mjs); rows are the first N words of docs/words.txt, so no word list is stored
+  const BITS = +(process.argv.find(a => a.startsWith('--bits='))?.split('=')[1] ?? 2);
+  const norms = new Float32Array(N); for (let r = 0; r < N; r++) { let n2 = 0; for (let d = 0; d < D; d++) n2 += P[r * D + d] ** 2; norms[r] = Math.sqrt(n2) || 1; }
+  const { packed, scales } = quantizeRows((r, d) => P[r * D + d] / norms[r], N, D, BITS);
+  fs.writeFileSync('docs/profiles.bin', Buffer.from(packed.buffer, packed.byteOffset, packed.byteLength));
+  fs.writeFileSync('docs/profiles_meta.json', JSON.stringify({ N, D, K, W, bits: BITS, seed: SEED, shiftMul: 7919, shiftOff: 16, scales: Array.from(scales, x => +x.toPrecision(5)) }));
+  console.log(`exported docs/profiles.bin ${(packed.byteLength / 1e6).toFixed(2)} MB (${BITS} bits)`);
 }

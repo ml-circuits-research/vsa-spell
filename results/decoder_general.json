@@ -2,17 +2,17 @@
  "nTest": 1000,
  "weights": {
   "freq": 0.6,
-  "grammar": 0.355,
-  "article": 6.164,
-  "profile": 2.978,
+  "grammar": 0.259,
+  "article": 7.654,
+  "profile": 5.5,
   "domain": 3,
-  "confusion": 1.054,
+  "confusion": 0.563,
   "sim": 2.043,
   "edit": 1.362,
   "keepUnknown": -9,
-  "nearWord": -4.489,
-  "confusionSwap": -1.79,
-  "morph": -3.481,
+  "nearWord": -5.653,
+  "confusionSwap": -0.895,
+  "morph": -3.127,
   "kNonword": 6,
   "kNear": 3
  },
@@ -42,72 +42,72 @@
    "errors": 1073
   },
   "proofreader page (careful)": {
-   "sentence": 0.498,
-   "fixed": 0.5387,
-   "falseChangesPer100": 1.11,
+   "sentence": 0.493,
+   "fixed": 0.5405,
+   "falseChangesPer100": 1.16,
    "byType": {
     "grammar": 0,
     "typo": 0.764,
-    "realword": 0.599
+    "realword": 0.605
    },
    "n": 1000,
    "errors": 1073
   },
   "decoder (full)": {
-   "sentence": 0.643,
-   "fixed": 0.6692,
-   "falseChangesPer100": 0.58,
+   "sentence": 0.647,
+   "fixed": 0.6813,
+   "falseChangesPer100": 0.64,
    "byType": {
-    "grammar": 0.254,
-    "typo": 0.84,
-    "realword": 0.719
+    "grammar": 0.217,
+    "typo": 0.855,
+    "realword": 0.763
    },
    "n": 1000,
    "errors": 1073
   },
   "decoder, no grammar": {
-   "sentence": 0.573,
-   "fixed": 0.5825,
-   "falseChangesPer100": 0.38,
+   "sentence": 0.58,
+   "fixed": 0.6067,
+   "falseChangesPer100": 0.5,
    "byType": {
-    "grammar": 0.02,
-    "typo": 0.834,
-    "realword": 0.62
+    "grammar": 0.012,
+    "typo": 0.848,
+    "realword": 0.683
    },
    "n": 1000,
    "errors": 1073
   },
   "decoder, no context profiles": {
-   "sentence": 0.603,
-   "fixed": 0.6226,
-   "falseChangesPer100": 0.62,
+   "sentence": 0.611,
+   "fixed": 0.6291,
+   "falseChangesPer100": 0.59,
    "byType": {
-    "grammar": 0.217,
-    "typo": 0.822,
-    "realword": 0.623
+    "grammar": 0.176,
+    "typo": 0.826,
+    "realword": 0.668
    },
    "n": 1000,
    "errors": 1073
   },
   "decoder, no confusion classes": {
-   "sentence": 0.493,
-   "fixed": 0.4408,
-   "falseChangesPer100": 0.02,
+   "sentence": 0.475,
+   "fixed": 0.4222,
+   "falseChangesPer100": 0.06,
    "byType": {
-    "grammar": 0.209,
-    "typo": 0.82,
-    "realword": 0.048
+    "grammar": 0.148,
+    "typo": 0.824,
+    "realword": 0.027
    },
    "n": 1000,
    "errors": 1073
   },
   "decoder, grammar + spelling only": {
-   "sentence": 0.457,
-   "fixed": 0.3933,
+   "sentence": 0.456,
+   "fixed": 0.3896,
    "falseChangesPer100": 0.02,
    "byType": {
-    "grammar": 0.139,
-    "typo": 0.784,
+    "grammar": 0.135,
+    "typo": 0.778,
     "realword": 0
    },
    "n": 1000,
@@ -126,11 +126,11 @@
    "errors": 1073
   }
  },
- "msPerSentence": 59.3,
+ "msPerSentence": 60.5,
  "examples": [
   {
    "input": "Som of the general public was present, then?\" \"Oh, yes.",
-   "decoded": "Some of the general public was present, then?\" \"Oh, yes.",
+   "decoded": "Some of the general public was present, than?\" \"Oh, yes.",
    "errs": [
     {
      "i": 5,
@@ -190,7 +190,7 @@
   },
   {
    "input": "In proportion to the defeat of the Austrian army Austria loses its rights, and the rights and the strength of Frane increase.",
-   "decoded": "In proportion to the defeat of the Austrian army Austria loses its rights, and the rights and the strength of France increase.",
+   "decoded": "In proportion to the defeat of the Austrian army Austria loses its rights, and the rights and the strength of Fran increase.",
    "errs": [
     {
      "i": 20,
@@ -244,7 +244,7 @@
   },
   {
    "input": "Prophylactic injection of tetanus antitoxin may be indicated.",
-   "decoded": "Prophylactic injection of tetanus antitoxin may be indicated.",
+   "decoded": "Prophylactic injection off tetanus antitoxin may be indicated.",
    "errs": []
   },
   {
@@ -266,7 +266,7 @@
   },
   {
    "input": "\"Wil they burn the bridge or not?",
-   "decoded": "\"Wile they burn the bridge or not?",
+   "decoded": "\"Will they burn the bridge or not?",
    "errs": [
     {
      "i": 0,

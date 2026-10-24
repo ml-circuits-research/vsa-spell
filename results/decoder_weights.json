@@ -1,16 +1,16 @@
 {
  "freq": 0.6,
- "grammar": 0.355,
- "article": 6.164,
- "profile": 2.978,
+ "grammar": 0.259,
+ "article": 7.654,
+ "profile": 5.5,
  "domain": 3,
- "confusion": 1.054,
+ "confusion": 0.563,
  "sim": 2.043,
  "edit": 1.362,
  "keepUnknown": -9,
- "nearWord": -4.489,
- "confusionSwap": -1.79,
- "morph": -3.481,
+ "nearWord": -5.653,
+ "confusionSwap": -0.895,
+ "morph": -3.127,
  "kNonword": 6,
  "kNear": 3
 }

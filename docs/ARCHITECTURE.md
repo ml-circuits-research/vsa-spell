@@ -54,7 +54,7 @@ position-specific cyclic shift (`((p + 16) · 7919) mod D` for offset p) and wei
 and normalised (bundling). Then 20 epochs of HDC retraining: when an occurrence is closer to
 another member of its set, its context is added to the right class and subtracted from the
 wrong one (a perceptron update in hypervector space). Class vectors are quantised to int8 with
-one scale per vector; this changed test accuracy by 0.02 points.
+one scale per vector (0.02 points), then packed to 4 bits for shipping (0.4 points; see BENCHMARKS.md).
 
 **Decision.** For a word in an enabled set, each member is scored by
 `cos(context, class) + log(count)/20` (prior weight 1.0, tuned on dev). The word is flagged when another member beats it

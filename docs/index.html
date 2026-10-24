@@ -217,7 +217,7 @@ td.chosen.same { font-weight: 400; color: var(--ink-soft); }
         <textarea id="c-ex" spellcheck="false"></textarea>
         <button class="btn" id="c-apply" type="button">Use this dictionary</button>
       </div>
-      <p class="i-status" id="i-status">Choose a dictionary. The interpreter loads 16 MB more on first use.</p>
+      <p class="i-status" id="i-status">Choose a dictionary. The interpreter downloads about 8 MB more on first use.</p>
       <pre class="formula">score = spelling distance
       + word frequency
       + grammar (part-of-speech bigrams)
@@ -261,7 +261,7 @@ td.chosen.same { font-weight: 400; color: var(--ink-soft); }
       <div class="margin-head"><h2>Margin notes</h2><span class="count" id="count"></span></div>
       <ul class="issues" id="issues"></ul>
       <div class="harper">
-        <label><input type="checkbox" id="harper-on"> Add grammar rules (Harper)</label>
+        <label><input type="checkbox" id="harper-on" autocomplete="off"> Add grammar rules (Harper)</label>
         <span id="harper-status">Optional rule-based grammar layer from the Harper project. Uses a local copy in docs/vendor if present, otherwise downloads about 27 MB from jsDelivr.</span>
       </div>
     </aside>
@@ -294,7 +294,7 @@ const SAMPLE = `I recieved your letter from the comittee last week. They plan to
 It is quite important that we loose no more time. The council will meet hear on Friday, and I would rather go their in person. The new plan is better then the old one, but nobody knows weather the sight has been aproved.`;
 
 // Results measured offline with the same code (see the session transcript).
-const BENCH = {"spell": [{"name": "VSA (this page)", "ours": true, "v": [0.926, 0.9863, 15.9]}, {"name": "SymSpell, edit distance 3", "v": [0.9023, 0.974, 6.6]}, {"name": "SymSpell, edit distance 2", "v": [0.891, 0.956, 0.5]}, {"name": "Harper", "v": [0.8523, 0.931, 6.9]}, {"name": "Hunspell (nspell)", "v": [0.789, 0.865, 16.4]}], "spellNote": "3,000 real misspellings from the codespell list (for example <em>soloution</em>, <em>irresistable</em>). Weights tuned on a separate 1,000-word dev set. VSA and SymSpell share the same 80,000-word frequency dictionary; Harper and Hunspell use their own. Times are from Node on one CPU core; SymSpell ran in Python.", "ctx": [{"name": "VSA (this page)", "ours": true, "v": [0.8796, 0.5144, 0.0116]}, {"name": "Word n-grams (stupid backoff)", "v": [0.8835, 0.6596, 0.0179]}, {"name": "VSA + n-grams", "v": [0.8939, 0.6983, 0.02]}, {"name": "Harper", "v": ["—", 0.0202, 0.0047]}, {"name": "Most frequent word", "v": [0.5983, "—", "—"]}], "ctxNote": "9,198 sentences from held-out books in Norvig's <em>big.txt</em>, 320 confusion sets. Models trained on 6.8 million words of other text (Brown, Reuters, Gutenberg, Europarl, reviews, tweets), so the test is out of domain. <em>Right word</em>: picks the original word among the set. <em>Fixed</em>: after swapping in a wrong member, the checker flags it and proposes the original. <em>False marks</em>: share of correct sentences flagged. The n-gram tables hold 6 million entries; the VSA classes take 10.6 MB.", "sent": [{"name": "Decoder, general dictionary", "ours": true, "v": [0.643, 0.669, 0.0058]}, {"name": "Decoder without grammar", "v": [0.573, 0.583, 0.0038]}, {"name": "Proofread mode (careful)", "v": [0.498, 0.539, 0.0111]}, {"name": "Spelling only", "v": [0.43, 0.351, 0.0]}, {"name": "Harper (first suggestions)", "v": [0.432, 0.365, 0.0403]}, {"name": "Agent commands, own dictionary + examples", "ours": true, "v": [0.993, 0.995, 0.0]}, {"name": "Agent commands, spelling only", "v": [0.928, 0.942, 0.0]}], "sentNote": "General: 1,000 held-out <em>big.txt</em> sentences, 80% with one or two injected errors (typos, confused words, verb/article agreement). Agent commands: 600 test commands, disjoint from the 150 examples, with one or two typos. <em>Sentences</em>: output equals the original exactly. <em>False changes</em>: share of correct words that were changed. Weights tuned on separate dev sentences."};
+const BENCH = {"spell": [{"name": "VSA (this page)", "ours": true, "v": [0.926, 0.9863, 15.9]}, {"name": "SymSpell, edit distance 3", "v": [0.9023, 0.974, 6.6]}, {"name": "SymSpell, edit distance 2", "v": [0.891, 0.956, 0.5]}, {"name": "Harper", "v": [0.8523, 0.931, 6.9]}, {"name": "Hunspell (nspell)", "v": [0.789, 0.865, 16.4]}], "spellNote": "3,000 real misspellings from the codespell list (for example <em>soloution</em>, <em>irresistable</em>). Weights tuned on a separate 1,000-word dev set. VSA and SymSpell share the same 80,000-word frequency dictionary; Harper and Hunspell use their own. Times are from Node on one CPU core; SymSpell ran in Python.", "ctx": [{"name": "VSA (this page)", "ours": true, "v": [0.8796, 0.5144, 0.0116]}, {"name": "Word n-grams (stupid backoff)", "v": [0.8835, 0.6596, 0.0179]}, {"name": "VSA + n-grams", "v": [0.8939, 0.6983, 0.02]}, {"name": "Harper", "v": ["—", 0.0202, 0.0047]}, {"name": "Most frequent word", "v": [0.5983, "—", "—"]}], "ctxNote": "9,198 sentences from held-out books in Norvig's <em>big.txt</em>, 320 confusion sets. Models trained on 6.8 million words of other text (Brown, Reuters, Gutenberg, Europarl, reviews, tweets), so the test is out of domain. <em>Right word</em>: picks the original word among the set. <em>Fixed</em>: after swapping in a wrong member, the checker flags it and proposes the original. <em>False marks</em>: share of correct sentences flagged. The n-gram tables hold 6 million entries; the VSA classes ship at 4 bits (5.3 MB), which costs 0.4 points.", "sent": [{"name": "Decoder, general dictionary", "ours": true, "v": [0.647, 0.681, 0.0064]}, {"name": "Decoder without grammar", "v": [0.58, 0.607, 0.005]}, {"name": "Proofread mode (careful)", "v": [0.493, 0.541, 0.0116]}, {"name": "Spelling only", "v": [0.43, 0.351, 0.0]}, {"name": "Harper (first suggestions)", "v": [0.432, 0.365, 0.0403]}, {"name": "Agent commands, own dictionary + examples", "ours": true, "v": [0.997, 0.997, 0.0]}, {"name": "Agent commands, spelling only", "v": [0.928, 0.942, 0.0]}], "sentNote": "General: 1,000 held-out <em>big.txt</em> sentences, 80% with one or two injected errors (typos, confused words, verb/article agreement). Agent commands: 600 test commands, disjoint from the 150 examples, with one or two typos. <em>Sentences</em>: output equals the original exactly. <em>False changes</em>: share of correct words that were changed. Weights tuned on separate dev sentences."};
 
 const $ = s => document.querySelector(s);
 const ta = $('#text'), bd = $('#backdrop'), list = $('#issues');
@@ -311,8 +311,8 @@ worker.onmessage = e => {
   if (m.type === 'ready') {
     ready = true; const c = $('#st-model'); c.classList.add('ok');
     c.textContent = `Ready · ${m.vocab.toLocaleString()} words · ${m.enabledSets} active confusion sets`;
-    $('#st-size').textContent = `models ${(m.spellMB + m.ctxMB).toFixed(1)} MB in memory`;
-    $('#st-time').textContent = `built in ${((m.downloadMs + m.buildMs) / 1000).toFixed(1)} s`;
+    $('#st-size').textContent = `${m.downloadMB.toFixed(1)} MB models · ${m.memMB.toFixed(0)} MB in memory`;
+    $('#st-time').textContent = `${m.cached ? 'from cache, ' : ''}ready in ${((m.downloadMs + m.buildMs) / 1000).toFixed(1)} s`;
     $('#n-sets').textContent = m.sets;
     schedule(0);
     if (pendingInterp) { pendingInterp = false; configure(); }
