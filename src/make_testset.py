@@ -19,3 +19,12 @@ test=pairs[:3000]
 json.dump(test,open('data/test_nonword.json','w'))
 json.dump(pairs[3000:4000],open('data/dev_nonword.json','w'))  # dev split for tuning, disjoint from test
 print(len(pairs),'eligible; test',len(test)); print(test[:12])
+
+# misspellings indexed by the correct word (used to inject realistic typos in sentence tests)
+by_word = {}
+for l in open(cs):
+    if '->' not in l: continue
+    a, b = l.strip().split('->', 1); b = b.rstrip(',')
+    if ',' in b or not re.fullmatch('[a-z]{3,}', a) or not re.fullmatch('[a-z]{3,}', b): continue
+    by_word.setdefault(b, []).append(a)
+json.dump(by_word, open('data/misspellings_by_word.json', 'w'))

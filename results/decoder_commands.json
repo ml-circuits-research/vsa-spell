@@ -1,0 +1,104 @@
+{
+ "nTest": 600,
+ "domainWeights": {
+  "domain": 3,
+  "keepUnknown": -9
+ },
+ "systems": {
+  "no correction": {
+   "sentence": 0.1267,
+   "fixed": 0,
+   "falseChangesPer100": 0,
+   "n": 600,
+   "errors": 755
+  },
+  "spelling only, general 80k dictionary": {
+   "sentence": 0.5683,
+   "fixed": 0.6026,
+   "falseChangesPer100": 0,
+   "n": 600,
+   "errors": 755
+  },
+  "spelling only, command dictionary": {
+   "sentence": 0.9283,
+   "fixed": 0.9417,
+   "falseChangesPer100": 0,
+   "n": 600,
+   "errors": 755
+  },
+  "decoder, general 80k dictionary": {
+   "sentence": 0.6083,
+   "fixed": 0.6755,
+   "falseChangesPer100": 0.74,
+   "n": 600,
+   "errors": 755
+  },
+  "decoder, command dictionary": {
+   "sentence": 0.9283,
+   "fixed": 0.943,
+   "falseChangesPer100": 0,
+   "n": 600,
+   "errors": 755
+  },
+  "decoder, command dictionary + examples": {
+   "sentence": 0.9933,
+   "fixed": 0.9947,
+   "falseChangesPer100": 0,
+   "n": 600,
+   "errors": 755
+  }
+ },
+ "msPerSentence": 4.9,
+ "examples": [
+  {
+   "input": "share the presentation repports with the client",
+   "decoded": "share the presentation reports with the client",
+   "gold": "share the presentation reports with the client"
+  },
+  {
+   "input": "make a new document namned bakup",
+   "decoded": "make a new document named backup",
+   "gold": "make a new document named backup"
+  },
+  {
+   "input": "smove the folder invoices to downloads",
+   "decoded": "move the folder invoices to downloads",
+   "gold": "move the folder invoices to downloads"
+  },
+  {
+   "input": "opne the budget spredsheet",
+   "decoded": "open the budget spreadsheet",
+   "gold": "open the budget spreadsheet"
+  },
+  {
+   "input": "share the folde drafts wirh my manager",
+   "decoded": "share the folder drafts with my manager",
+   "gold": "share the folder drafts with my manager"
+  },
+  {
+   "input": "copy the fule projecct to downloads",
+   "decoded": "copy the file project to downloads",
+   "gold": "copy the file project to downloads"
+  },
+  {
+   "input": "remove the spreadshete named budhet",
+   "decoded": "remove the spreadsheet named budget",
+   "gold": "remove the spreadsheet named budget"
+  },
+  {
+   "input": "send an email to the client about thr contract",
+   "decoded": "send an email to the client about the contract",
+   "gold": "send an email to the client about the contract"
+  },
+  {
+   "input": "rceate a new spreadsheet named slides in desktop",
+   "decoded": "create a new spreadsheet named slides in desktop",
+   "gold": "create a new spreadsheet named slides in desktop"
+  },
+  {
+   "input": "remind me to send the report tomorrrow",
+   "decoded": "remind me to send the report tomorrow",
+   "gold": "remind me to send the report tomorrow"
+  }
+ ]
+}

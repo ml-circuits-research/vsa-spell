@@ -127,6 +127,42 @@ tr.ours td { background: color-mix(in srgb, var(--accent) 6%, transparent); }
 .bar { display: inline-block; height: 6px; border-radius: 3px; background: var(--accent); vertical-align: 1px; margin-right: 8px; opacity: .55; }
 tr.ours .bar { opacity: 1; }
 @media (prefers-reduced-motion: no-preference) { .issue { transition: border-color .15s; } }
+
+/* mode switch */
+.modes { display: flex; gap: 4px; border-bottom: 1px solid var(--rule); }
+.modes button { font-family: var(--f-ui); font-size: var(--s1); background: none; border: 0; border-bottom: 2px solid transparent; color: var(--ink-soft); padding: 8px 12px; margin-bottom: -1px; }
+.modes button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+.modes button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* interpret mode */
+.i-body { display: grid; gap: 16px; padding: 16px 18px 18px; }
+.i-input { font-family: var(--f-text); font-size: 18px; width: 100%; padding: 10px 12px; border: 1px solid var(--rule); border-radius: 4px; background: var(--paper); color: var(--ink); }
+.i-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button { font-family: var(--f-text); font-size: var(--s-1); border: 1px dashed var(--rule); background: none; color: var(--ink-soft); border-radius: 3px; padding: 3px 8px; text-align: left; }
+.chips button:hover { color: var(--ink); border-color: var(--ink-soft); }
+.i-label { font-size: var(--s-1); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); font-weight: 600; }
+.i-best { font-family: var(--f-display); font-size: var(--s3); line-height: 1.35; margin: 4px 0 0; overflow-wrap: anywhere; }
+.i-best .fix { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--ink); border-radius: 2px; padding: 0 2px; }
+.i-best .kept { text-decoration: underline dotted var(--ink-soft); text-underline-offset: 4px; }
+.i-alts { margin: 0; padding-left: 22px; display: grid; gap: 4px; font-family: var(--f-text); font-size: var(--s-0); color: var(--ink-soft); }
+.i-alts li span.d { font-family: var(--f-mono); font-size: var(--s-1); margin-left: 8px; }
+.i-alts li.top { color: var(--ink); }
+td .cand { font-family: var(--f-text); }
+td.why { color: var(--ink-soft); }
+td.chosen { font-family: var(--f-text); font-weight: 600; }
+td.chosen.same { font-weight: 400; color: var(--ink-soft); }
+.srcs { display: grid; gap: 8px; }
+.src { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; align-items: start; cursor: pointer; background: var(--sheet); border: 1px solid var(--rule); border-radius: 4px; padding: 9px 11px; }
+.src:has(input:checked) { border-color: var(--accent); }
+.src input { margin-top: 3px; }
+.src b { font-weight: 600; font-size: var(--s-0); }
+.src span { grid-column: 2; font-size: var(--s-1); color: var(--ink-soft); }
+.custom { display: grid; gap: 6px; }
+.custom label { font-size: var(--s-1); color: var(--ink-soft); }
+.custom textarea { font-family: var(--f-mono); font-size: var(--s-1); width: 100%; min-height: 110px; border: 1px solid var(--rule); border-radius: 4px; background: var(--sheet); color: var(--ink); padding: 8px; resize: vertical; }
+.i-status { font-size: var(--s-1); color: var(--ink-soft); margin: 0; }
+.i-status.err { color: var(--spell); }
+.formula { font-family: var(--f-mono); font-size: var(--s-1); color: var(--ink-soft); background: var(--sheet); border: 1px solid var(--rule); border-radius: 4px; padding: 10px; margin: 0; white-space: pre-wrap; }
 </style>
 </head>
 <body>
@@ -134,7 +170,7 @@ tr.ours .bar { opacity: 1; }
 <div class="wrap">
   <header>
     <h1>Hypervector Proofreader</h1>
-    <p class="lede">English spelling and word-choice checking with vector symbolic architectures, running entirely in this page. No language model and no server: every check happens on your device.</p>
+    <p class="lede">English spelling, word-choice and sentence interpretation with vector symbolic architectures, running entirely in this page. No language model and no server: every check happens on your device.</p>
     <div class="status" aria-live="polite">
       <span class="chip live" id="st-model">Loading models…</span>
       <span class="chip" id="st-size">—</span>
@@ -142,7 +178,56 @@ tr.ours .bar { opacity: 1; }
     </div>
   </header>
 
-  <div class="desk">
+  <nav class="modes" role="tablist" aria-label="Mode">
+    <button type="button" role="tab" id="tab-proof" aria-selected="true" aria-controls="pane-proof">Proofread text</button>
+    <button type="button" role="tab" id="tab-interp" aria-selected="false" aria-controls="pane-interp">Interpret a sentence</button>
+  </nav>
+
+  <div class="desk" id="pane-interp" role="tabpanel" aria-labelledby="tab-interp" hidden>
+    <div class="sheet">
+      <div class="sheet-bar"><span>Type a chat message or an agent command</span><span class="count" id="i-time"></span></div>
+      <div class="i-body">
+        <input class="i-input" id="i-text" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Sentence to interpret">
+        <div class="chips" id="i-examples" aria-label="Examples"></div>
+        <div>
+          <div class="i-label">Most probable interpretation</div>
+          <p class="i-best" id="i-best" aria-live="polite">—</p>
+        </div>
+        <div>
+          <div class="i-label">Alternatives</div>
+          <ol class="i-alts" id="i-alts"></ol>
+        </div>
+        <div class="tablebox"><table>
+          <thead><tr><th>Typed</th><th>Chosen</th><th>Why</th><th>Other candidates</th></tr></thead>
+          <tbody id="i-words"></tbody>
+        </table></div>
+      </div>
+    </div>
+    <aside class="margin" aria-label="Dictionary">
+      <div class="margin-head"><h2>Dictionary</h2><span class="count" id="i-dictsize"></span></div>
+      <div class="srcs" role="radiogroup" aria-label="Dictionary">
+        <label class="src"><input type="radio" name="src" value="general" id="src-general" checked><b>General English</b><span>80,000 words, any sentence</span></label>
+        <label class="src"><input type="radio" name="src" value="commands" id="src-commands"><b>Agent commands</b><span>153 words and 150 example commands; output is limited to these words</span></label>
+        <label class="src"><input type="radio" name="src" value="custom" id="src-custom"><b>Your own</b><span>Paste a word list and, optionally, example sentences</span></label>
+      </div>
+      <div class="custom" id="custom-box" hidden>
+        <label for="c-dict">Words, one per line or separated by spaces. Add a count after a word to weight it.</label>
+        <textarea id="c-dict" spellcheck="false"></textarea>
+        <label for="c-ex">Example sentences, one per line (optional; they teach word order)</label>
+        <textarea id="c-ex" spellcheck="false"></textarea>
+        <button class="btn" id="c-apply" type="button">Use this dictionary</button>
+      </div>
+      <p class="i-status" id="i-status">Choose a dictionary. The interpreter loads 16 MB more on first use.</p>
+      <pre class="formula">score = spelling distance
+      + word frequency
+      + grammar (part-of-speech bigrams)
+      + context hypervectors
+      + your examples' hypervectors
+      + confusion-set classes</pre>
+    </aside>
+  </div>
+
+  <div class="desk" id="pane-proof" role="tabpanel" aria-labelledby="tab-proof">
     <div class="sheet">
       <div class="sheet-bar">
         <div class="legend" aria-label="Mark legend">
@@ -189,6 +274,9 @@ tr.ours .bar { opacity: 1; }
         <p class="prose"><strong>Spelling.</strong> Every dictionary word becomes a 1,024-bit hypervector: each character bigram and trigram of <code>#word#</code> is bound by XOR with position encoded by rotation, and the n-grams are bundled by majority vote. A second hypervector does the same for the word's Double Metaphone code, so <em>ressapee</em> lands near <em>recipe</em>. An unknown word is matched against all 80,000 words by Hamming distance, then reranked by frequency and edit distance.</p>
       </div>
       <div>
+        <p class="prose"><strong>Interpretation.</strong> Every typed word gets candidates: spelling neighbours from the hypervector memory, other forms (<em>go/goes/went</em>), confusable words and close dictionary words. The decoder picks the combination with the best total score: spelling distance, word frequency, a part-of-speech grammar learned from the tagged Brown corpus, context hypervectors for 30,000 words, hypervectors learned from your own example sentences, and the confusion-set classes. With your own dictionary it can only output your words, which suits chat commands and agents.</p>
+      </div>
+      <div>
         <p class="prose"><strong>Word choice.</strong> For each of <span id="n-sets">320</span> confusion sets (<em>form/from</em>, <em>their/there</em>, <em>quite/quiet</em> …) every member has a class hypervector learned by random indexing from about 7.7 million words: the four words on each side are bundled in, each permuted by its position. Mistakes during training are corrected by moving the context out of the wrong class and into the right one. A word is flagged only when another member fits its sentence clearly better. <em>Careful</em> uses the threshold that kept false marks near 1.5% on held-out text; <em>Balanced</em> and <em>Eager</em> halve and quarter it, catching more slips at the cost of more false marks.</p>
       </div>
     </div>
@@ -206,7 +294,7 @@ const SAMPLE = `I recieved your letter from the comittee last week. They plan to
 It is quite important that we loose no more time. The council will meet hear on Friday, and I would rather go their in person. The new plan is better then the old one, but nobody knows weather the sight has been aproved.`;
 
 // Results measured offline with the same code (see the session transcript).
-const BENCH = {"spell": [{"name": "VSA (this page)", "ours": true, "v": [0.926, 0.9863, 15.9]}, {"name": "SymSpell, edit distance 3", "v": [0.9023, 0.974, 6.6]}, {"name": "SymSpell, edit distance 2", "v": [0.891, 0.956, 0.5]}, {"name": "Harper", "v": [0.8523, 0.931, 6.9]}, {"name": "Hunspell (nspell)", "v": [0.789, 0.865, 16.4]}], "spellNote": "3,000 real misspellings from the codespell list (for example <em>soloution</em>, <em>irresistable</em>). Weights tuned on a separate 1,000-word dev set. VSA and SymSpell share the same 80,000-word frequency dictionary; Harper and Hunspell use their own. Times are from Node on one CPU core; SymSpell ran in Python.", "ctx": [{"name": "VSA (this page)", "ours": true, "v": [0.8796, 0.5144, 0.0116]}, {"name": "Word n-grams (stupid backoff)", "v": [0.8835, 0.6596, 0.0179]}, {"name": "VSA + n-grams", "v": [0.8939, 0.6983, 0.02]}, {"name": "Harper", "v": ["—", 0.0202, 0.0047]}, {"name": "Most frequent word", "v": [0.5983, "—", "—"]}], "ctxNote": "9,198 sentences from held-out books in Norvig's <em>big.txt</em>, 320 confusion sets. Models trained on 6.8 million words of other text (Brown, Reuters, Gutenberg, Europarl, reviews, tweets), so the test is out of domain. <em>Right word</em>: picks the original word among the set. <em>Fixed</em>: after swapping in a wrong member, the checker flags it and proposes the original. <em>False marks</em>: share of correct sentences flagged. The n-gram tables hold 6 million entries; the VSA classes take 10.6 MB."};
+const BENCH = {"spell": [{"name": "VSA (this page)", "ours": true, "v": [0.926, 0.9863, 15.9]}, {"name": "SymSpell, edit distance 3", "v": [0.9023, 0.974, 6.6]}, {"name": "SymSpell, edit distance 2", "v": [0.891, 0.956, 0.5]}, {"name": "Harper", "v": [0.8523, 0.931, 6.9]}, {"name": "Hunspell (nspell)", "v": [0.789, 0.865, 16.4]}], "spellNote": "3,000 real misspellings from the codespell list (for example <em>soloution</em>, <em>irresistable</em>). Weights tuned on a separate 1,000-word dev set. VSA and SymSpell share the same 80,000-word frequency dictionary; Harper and Hunspell use their own. Times are from Node on one CPU core; SymSpell ran in Python.", "ctx": [{"name": "VSA (this page)", "ours": true, "v": [0.8796, 0.5144, 0.0116]}, {"name": "Word n-grams (stupid backoff)", "v": [0.8835, 0.6596, 0.0179]}, {"name": "VSA + n-grams", "v": [0.8939, 0.6983, 0.02]}, {"name": "Harper", "v": ["—", 0.0202, 0.0047]}, {"name": "Most frequent word", "v": [0.5983, "—", "—"]}], "ctxNote": "9,198 sentences from held-out books in Norvig's <em>big.txt</em>, 320 confusion sets. Models trained on 6.8 million words of other text (Brown, Reuters, Gutenberg, Europarl, reviews, tweets), so the test is out of domain. <em>Right word</em>: picks the original word among the set. <em>Fixed</em>: after swapping in a wrong member, the checker flags it and proposes the original. <em>False marks</em>: share of correct sentences flagged. The n-gram tables hold 6 million entries; the VSA classes take 10.6 MB.", "sent": [{"name": "Decoder, general dictionary", "ours": true, "v": [0.643, 0.669, 0.0058]}, {"name": "Decoder without grammar", "v": [0.573, 0.583, 0.0038]}, {"name": "Proofread mode (careful)", "v": [0.498, 0.539, 0.0111]}, {"name": "Spelling only", "v": [0.43, 0.351, 0.0]}, {"name": "Harper (first suggestions)", "v": [0.432, 0.365, 0.0403]}, {"name": "Agent commands, own dictionary + examples", "ours": true, "v": [0.993, 0.995, 0.0]}, {"name": "Agent commands, spelling only", "v": [0.928, 0.942, 0.0]}], "sentNote": "General: 1,000 held-out <em>big.txt</em> sentences, 80% with one or two injected errors (typos, confused words, verb/article agreement). Agent commands: 600 test commands, disjoint from the 150 examples, with one or two typos. <em>Sentences</em>: output equals the original exactly. <em>False changes</em>: share of correct words that were changed. Weights tuned on separate dev sentences."};
 
 const $ = s => document.querySelector(s);
 const ta = $('#text'), bd = $('#backdrop'), list = $('#issues');
@@ -227,13 +315,74 @@ worker.onmessage = e => {
     $('#st-time').textContent = `built in ${((m.downloadMs + m.buildMs) / 1000).toFixed(1)} s`;
     $('#n-sets').textContent = m.sets;
     schedule(0);
+    if (pendingInterp) { pendingInterp = false; configure(); }
   }
+  if (m.type === 'interp-ready') {
+    interpReady = true;
+    $('#i-dictsize').textContent = `${m.words.toLocaleString()} words`;
+    $('#i-status').textContent = `${m.words.toLocaleString()} words${m.examples ? `, ${m.examples} example sentences` : ''} · ready in ${((m.buildMs + (m.source === 'general' ? m.loadMs : 0)) / 1000).toFixed(1)} s`;
+    interp();
+  }
+  if (m.type === 'interp-error') { const st = $('#i-status'); st.textContent = m.message; st.classList.add('err'); }
+  if (m.type === 'interp-result' && m.id === iseq) renderInterp(m);
   if (m.type === 'result' && m.seq === undefined) {
     vsaIssues = m.issues; merge();
     $('#foot-left').textContent = `${m.nWords} words · checked in ${m.ms.toFixed(0)} ms`;
   }
 };
 worker.postMessage({ type: 'init' });
+
+// ---------------------------------------------------------------- interpret mode
+const EXAMPLES = {
+  general: ['I recieved you letter form the comittee', 'This are a sentence with a error in it', 'Their going too the park tomorow', 'The wether may effect the schedule'],
+  commands: ['creat a new fodler nmaed reports in documnets', 'remnd me to by milk tomorow at five pm', 'trun of the lihgts in the kitchn', 'shedule a meting with maria on firday at noon', 'snd an emial to the tem about the budjet'],
+  custom: ['ad milk to the shoping list', 'remov eggs form the list', 'wat is on my lsit'],
+};
+const CUSTOM_SAMPLE = { dict: 'add remove show clear what is on to from the my list shopping\nmilk eggs bread butter apples coffee tea rice cheese', ex: 'add milk to the shopping list\nremove eggs from the list\nwhat is on my list\nshow my shopping list\nadd coffee and tea to my list\nclear the list' };
+let interpReady = false, interpSrc = null, iseq = 0, itimer = 0, pendingInterp = false;
+const itext = $('#i-text');
+function setTab(name) {
+  const interp = name === 'interp';
+  $('#tab-proof').setAttribute('aria-selected', String(!interp)); $('#tab-interp').setAttribute('aria-selected', String(interp));
+  $('#pane-proof').hidden = interp; $('#pane-interp').hidden = !interp;
+  try { localStorage.setItem('hp-tab', name); } catch (e) {}
+  if (interp && !interpSrc) configure();
+}
+$('#tab-proof').onclick = () => setTab('proof'); $('#tab-interp').onclick = () => setTab('interp');
+function currentSrc() { return document.querySelector('input[name="src"]:checked').value; }
+function configure() {
+  if (!ready) { pendingInterp = true; $('#i-status').textContent = 'Waiting for the speller to finish loading…'; return; }
+  const source = currentSrc(); interpSrc = source; interpReady = false;
+  $('#i-status').classList.remove('err');
+  $('#i-status').textContent = source === 'general' ? 'Loading grammar and context hypervectors…' : 'Building the dictionary…';
+  worker.postMessage({ type: 'interp-config', source, dictionary: $('#c-dict').value, examples: $('#c-ex').value });
+  $('#i-examples').innerHTML = EXAMPLES[source].map(x => `<button type="button">${esc(x)}</button>`).join('');
+  if (!itext.value || Object.values(EXAMPLES).flat().includes(itext.value)) itext.value = EXAMPLES[source][0];
+}
+document.querySelectorAll('input[name="src"]').forEach(r => r.addEventListener('change', () => {
+  $('#custom-box').hidden = currentSrc() !== 'custom';
+  if (currentSrc() === 'custom' && !$('#c-dict').value) { $('#c-dict').value = CUSTOM_SAMPLE.dict; $('#c-ex').value = CUSTOM_SAMPLE.ex; }
+  configure();
+}));
+$('#c-apply').onclick = configure;
+$('#i-examples').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { itext.value = b.textContent; interp(); } });
+itext.addEventListener('input', () => { clearTimeout(itimer); itimer = setTimeout(interp, 250); });
+function interp() { if (!interpReady || !itext.value.trim()) return; worker.postMessage({ type: 'interp', text: itext.value, id: ++iseq }); }
+const caseLike = (raw, w) => raw.length > 1 && raw === raw.toUpperCase() ? w.toUpperCase() : /^[A-Z]/.test(raw) ? w[0].toUpperCase() + w.slice(1) : w;
+function renderInterp(r) {
+  const t = r.text; let html = '', pos = 0;
+  r.positions.forEach(p => {
+    html += esc(t.slice(pos, p.start));
+    const kept = p.why === 'keep as typed';
+    const w = kept ? p.raw : caseLike(p.raw, p.chosen);
+    html += p.changed && !kept ? `<span class="fix" title="typed: ${esc(p.raw)}">${esc(w)}</span>` : kept && p.changed ? `<span class="kept" title="not in the dictionary, kept as typed">${esc(w)}</span>` : esc(w);
+    pos = p.end;
+  });
+  $('#i-best').innerHTML = html + esc(t.slice(pos));
+  $('#i-alts').innerHTML = r.alternatives.slice(1).map(a => `<li>${esc(a.text)}<span class="d">${a.delta.toFixed(1)}</span></li>`).join('') || '<li>None close.</li>';
+  $('#i-words').innerHTML = r.positions.map(p => `<tr><td class="cand">${esc(p.raw)}</td><td class="chosen${p.changed ? '' : ' same'}">${esc(p.why === 'keep as typed' ? p.raw : caseLike(p.raw, p.chosen))}</td><td class="why">${esc(p.why)}</td><td class="cand">${p.candidates.filter(c => c.w !== p.chosen).slice(0, 4).map(c => esc(c.w)).join(', ') || '—'}</td></tr>`).join('');
+  $('#i-time').textContent = `${r.ms.toFixed(0)} ms`;
+}
 
 function schedule(ms = 350) { clearTimeout(timer); timer = setTimeout(runCheck, ms); }
 function runCheck() {
@@ -334,9 +483,11 @@ if (BENCH) {
   const ms = y => y < 1 ? y.toFixed(1) + ' ms' : y.toFixed(0) + ' ms';
   $('#bench').innerHTML =
     table('Misspelled words', ['System', 'Top-1', 'Top-5', 'Per word'], BENCH.spell.map(r => ({ ...r, fmt: [null, null, ms] })), BENCH.spellNote, 0) +
-    table('Real-word errors', ['System', 'Right word', 'Fixed', 'False marks'], BENCH.ctx, BENCH.ctxNote, 0);
+    table('Real-word errors', ['System', 'Right word', 'Fixed', 'False marks'], BENCH.ctx, BENCH.ctxNote, 0) +
+    table('Sentence interpretation', ['System', 'Sentences', 'Errors fixed', 'False changes'], BENCH.sent, BENCH.sentNote, 0);
 }
 merge();
+try { if (localStorage.getItem('hp-tab') === 'interp' || location.hash === '#interpret') setTab('interp'); } catch (e) {}
 </script>
 
 </body>

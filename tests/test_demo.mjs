@@ -40,6 +40,16 @@ for (const [name, vp, scheme] of [['desktop', { width: 1280, height: 1000 }, 'li
     await page.check('#harper-on');
     await page.waitForFunction(() => /loaded|could not/i.test(document.querySelector('#harper-status').textContent), null, { timeout: 120000 });
     await page.waitForTimeout(1500);
+    // interpret mode: general dictionary and the agent-command preset
+    await page.click('#tab-interp');
+    await page.waitForFunction(() => /ready/.test(document.querySelector('#i-status').textContent), null, { timeout: 60000 });
+    await page.fill('#i-text', 'This are a sentence with a error in it'); await page.waitForTimeout(800);
+    out.interpretGeneral = await page.textContent('#i-best');
+    await page.check('#src-commands');
+    await page.waitForFunction(() => /example/.test(document.querySelector('#i-status').textContent), null, { timeout: 60000 });
+    await page.fill('#i-text', 'creat a new fodler nmaed reports in documnets'); await page.waitForTimeout(800);
+    out.interpretCommands = await page.textContent('#i-best');
+    await page.click('#tab-proof');
     out.harper = { status: await page.textContent('#harper-status'), grammarMarks: await page.$$eval('.issue.grammar', els => els.map(e => e.querySelector('.word').textContent.trim() + ' -> ' + [...e.querySelectorAll('.sug')].map(s => s.textContent).join('|'))) };
   }
   await page.close();

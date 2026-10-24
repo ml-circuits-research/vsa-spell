@@ -1,8 +1,11 @@
 // Runs the VSA models off the main thread.
 import { Speller, ContextModel } from './vsa-core.js';
+import { SentenceDecoder } from './decoder.js';
+import { DECODER_WEIGHTS, DOMAIN_WEIGHTS } from './decoder-weights.js';
 
 const SPELL = { D: 1024, wPhon: 0.5, wFreq: 0.8, wLen: 0, wEd: 0.35 }; // tuned on a held-out dev split
-let speller = null, ctx = null;
+let speller = null, ctx = null, entries = null;
+let grammar = null, profiles = null, preset = null, decoder = null, interpLoading = null;
 const post = (type, data) => self.postMessage({ type, ...data });
 
 async function init() {
@@ -15,7 +18,7 @@ async function init() {
   ]);
   const tDl = performance.now();
   post('progress', { stage: 'Encoding 80,000 words as hypervectors' });
-  const entries = wordsTxt.trim().split('\n').map(l => { const [w, c] = l.split(' '); return [w, +c]; });
+  entries = wordsTxt.trim().split('\n').map(l => { const [w, c] = l.split(' '); return [w, +c]; });
   speller = new Speller({ D: SPELL.D });
   speller.build(entries);
   ctx = new ContextModel(meta, new Int8Array(vecBuf));
@@ -68,8 +71,53 @@ function check(text, ignore, scale) {
   post('result', { issues, ms: performance.now() - t0, nWords, nUnknown });
 }
 
+// ---------------------------------------------------------- sentence interpretation
+// Loaded on first use: grammar (0.9 MB), word-context profiles (15.4 MB), command preset.
+async function interpInit() {
+  if (!interpLoading) interpLoading = (async () => {
+    const t0 = performance.now();
+    const [g, pm, pb, pr] = await Promise.all([
+      fetch('grammar.json').then(r => r.json()), fetch('profiles_meta.json').then(r => r.json()),
+      fetch('profiles.bin').then(r => { if (!r.ok) throw new Error('profiles.bin ' + r.status); return r.arrayBuffer(); }),
+      fetch('presets/agent-commands.json').then(r => r.json()),
+    ]);
+    grammar = g; profiles = { meta: pm, int8: new Int8Array(pb) }; preset = pr;
+    return { loadMs: performance.now() - t0, profilesMB: pb.byteLength / 1e6 };
+  })();
+  return interpLoading;
+}
+const general = () => new Map(entries);
+function parseDictionary(text) {
+  const g = general(), out = [];
+  for (const line of String(text).split('\n')) {
+    const m = line.trim().match(/^([A-Za-z]+)\s+(\d+)$/);
+    if (m) { out.push([m[1].toLowerCase(), +m[2]]); continue; }
+    for (const w of line.split(/[^A-Za-z]+/)) if (w) out.push([w.toLowerCase(), g.get(w.toLowerCase()) || 1000]);
+  }
+  return out;
+}
+async function interpConfigure({ source, dictionary, examples }) {
+  const info = await interpInit(); const t0 = performance.now();
+  let dict, ex = [], weights = DECODER_WEIGHTS;
+  if (source === 'commands') { dict = preset.dictionary; ex = preset.examples; weights = { ...DECODER_WEIGHTS, ...DOMAIN_WEIGHTS }; }
+  else if (source === 'custom') {
+    dict = parseDictionary(dictionary || ''); ex = String(examples || '').split('\n').map(s => s.trim()).filter(Boolean);
+    if (dict.length < 2) throw new Error('Add at least two words to the dictionary.');
+    weights = ex.length ? { ...DECODER_WEIGHTS, ...DOMAIN_WEIGHTS } : DECODER_WEIGHTS;
+  } else dict = entries;
+  decoder = new SentenceDecoder({ dictionary: dict, examples: ex, grammar, profiles, confusion: ctx, weights, speller: source === 'general' ? speller : null });
+  post('interp-ready', { source, words: decoder.dict.size, examples: ex.length, buildMs: performance.now() - t0, ...info,
+    sampleWords: source === 'commands' ? preset.dictionary.slice(0, 400).map(d => d[0]) : null, sampleExamples: source === 'commands' ? preset.examples.slice(0, 12) : null });
+}
+function interpret(text, id) {
+  const t0 = performance.now(); const r = decoder.decode(text, { nbest: 6 });
+  post('interp-result', { id, ...r, ms: performance.now() - t0 });
+}
+
 self.onmessage = e => {
   const { type } = e.data;
+  if (type === 'interp-config') interpConfigure(e.data).catch(err => post('interp-error', { message: String(err && err.message || err) }));
+  if (type === 'interp' && decoder) interpret(e.data.text, e.data.id);
   if (type === 'init') init().catch(err => post('error', { message: String(err && err.message || err) }));
   if (type === 'check' && speller) check(e.data.text, e.data.ignore, e.data.scale);
 };

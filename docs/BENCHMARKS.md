@@ -80,6 +80,19 @@ two are level. One point is about 13 sentences in round 2 and about 92 in round 
 - Adding retraining, a ±4 window and larger D raised the same setting to 91.5%.
 - Harper on the 25 classic sets fixed 17.0% with 0.4% false marks; most of that was `to/too`.
 
+## Sentence interpretation
+
+See [DECODER.md](DECODER.md) for the method and the full tables. Summary:
+
+- General English, 1,000 held-out `big.txt` sentences (20% clean, 48% one error, 32% two errors;
+  errors are 45% typos, 30% confused words, 25% grammar): the decoder gets 64.3% of sentences
+  exactly right (proofread mode 49.8%, Harper 43.2%), fixes 66.9% of errors and changes 0.58 of
+  every 100 correct words. Removing the grammar layer costs 7 points of sentence accuracy.
+- Agent commands with their own 153-word dictionary and 150 example commands: 99.3% of 600 test
+  commands right with no false changes, against 92.8% for spelling alone over the same dictionary.
+
+Weights were tuned by random search on 250 dev sentences (`results/decoder_weights.json`).
+
 ## Browser
 
 Chromium (headless, one run): model download and build 1.9–2.4 s, checking a 65-word text

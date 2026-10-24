@@ -1,0 +1,280 @@
+{
+ "nTest": 1000,
+ "weights": {
+  "freq": 0.6,
+  "grammar": 0.355,
+  "article": 6.164,
+  "profile": 2.978,
+  "domain": 3,
+  "confusion": 1.054,
+  "sim": 2.043,
+  "edit": 1.362,
+  "keepUnknown": -9,
+  "nearWord": -4.489,
+  "confusionSwap": -1.79,
+  "morph": -3.481,
+  "kNonword": 6,
+  "kNear": 3
+ },
+ "systems": {
+  "no correction": {
+   "sentence": 0.23,
+   "fixed": 0,
+   "falseChangesPer100": 0,
+   "byType": {
+    "grammar": 0,
+    "typo": 0,
+    "realword": 0
+   },
+   "n": 1000,
+   "errors": 1073
+  },
+  "spelling only (VSA top-1)": {
+   "sentence": 0.43,
+   "fixed": 0.3514,
+   "falseChangesPer100": 0,
+   "byType": {
+    "grammar": 0,
+    "typo": 0.762,
+    "realword": 0
+   },
+   "n": 1000,
+   "errors": 1073
+  },
+  "proofreader page (careful)": {
+   "sentence": 0.498,
+   "fixed": 0.5387,
+   "falseChangesPer100": 1.11,
+   "byType": {
+    "grammar": 0,
+    "typo": 0.764,
+    "realword": 0.599
+   },
+   "n": 1000,
+   "errors": 1073
+  },
+  "decoder (full)": {
+   "sentence": 0.643,
+   "fixed": 0.6692,
+   "falseChangesPer100": 0.58,
+   "byType": {
+    "grammar": 0.254,
+    "typo": 0.84,
+    "realword": 0.719
+   },
+   "n": 1000,
+   "errors": 1073
+  },
+  "decoder, no grammar": {
+   "sentence": 0.573,
+   "fixed": 0.5825,
+   "falseChangesPer100": 0.38,
+   "byType": {
+    "grammar": 0.02,
+    "typo": 0.834,
+    "realword": 0.62
+   },
+   "n": 1000,
+   "errors": 1073
+  },
+  "decoder, no context profiles": {
+   "sentence": 0.603,
+   "fixed": 0.6226,
+   "falseChangesPer100": 0.62,
+   "byType": {
+    "grammar": 0.217,
+    "typo": 0.822,
+    "realword": 0.623
+   },
+   "n": 1000,
+   "errors": 1073
+  },
+  "decoder, no confusion classes": {
+   "sentence": 0.493,
+   "fixed": 0.4408,
+   "falseChangesPer100": 0.02,
+   "byType": {
+    "grammar": 0.209,
+    "typo": 0.82,
+    "realword": 0.048
+   },
+   "n": 1000,
+   "errors": 1073
+  },
+  "decoder, grammar + spelling only": {
+   "sentence": 0.457,
+   "fixed": 0.3933,
+   "falseChangesPer100": 0.02,
+   "byType": {
+    "grammar": 0.139,
+    "typo": 0.784,
+    "realword": 0
+   },
+   "n": 1000,
+   "errors": 1073
+  },
+  "Harper (first suggestions)": {
+   "sentence": 0.432,
+   "fixed": 0.3653,
+   "falseChangesPer100": 4.03,
+   "byType": {
+    "grammar": 0.262,
+    "typo": 0.614,
+    "realword": 0.072
+   },
+   "n": 1000,
+   "errors": 1073
+  }
+ },
+ "msPerSentence": 59.3,
+ "examples": [
+  {
+   "input": "Som of the general public was present, then?\" \"Oh, yes.",
+   "decoded": "Some of the general public was present, then?\" \"Oh, yes.",
+   "errs": [
+    {
+     "i": 5,
+     "type": "grammar",
+     "from": "were",
+     "to": "was"
+    },
+    {
+     "i": 0,
+     "type": "typo",
+     "from": "some",
+     "to": "som"
+    }
+   ]
+  },
+  {
+   "input": "The pus man be under such tension those fluctuation cannot be detected.",
+   "decoded": "The pus may be under such tension those fluctuation cannot be detected.",
+   "errs": [
+    {
+     "i": 7,
+     "type": "grammar",
+     "from": "that",
+     "to": "those"
+    },
+    {
+     "i": 2,
+     "type": "realword",
+     "from": "may",
+     "to": "man"
+    }
+   ]
+  },
+  {
+   "input": "Around him in the darkness men was standing and evidently something about him interested them greatly.",
+   "decoded": "Around him in the darkness men was standing and evidently something about him interested them greatly.",
+   "errs": [
+    {
+     "i": 6,
+     "type": "grammar",
+     "from": "were",
+     "to": "was"
+    }
+   ]
+  },
+  {
+   "input": "\"On the appointed day,\" wrote the assistant secretary, \"angziety reigned in the office of the Treasury.",
+   "decoded": "\"On the appointed day,\" wrote the assistant secretary, \"anxiety reigned in the office of the Treasury.",
+   "errs": [
+    {
+     "i": 8,
+     "type": "typo",
+     "from": "anxiety",
+     "to": "angziety"
+    }
+   ]
+  },
+  {
+   "input": "In proportion to the defeat of the Austrian army Austria loses its rights, and the rights and the strength of Frane increase.",
+   "decoded": "In proportion to the defeat of the Austrian army Austria loses its rights, and the rights and the strength of France increase.",
+   "errs": [
+    {
+     "i": 20,
+     "type": "typo",
+     "from": "france",
+     "to": "frane"
+    }
+   ]
+  },
+  {
+   "input": "\"Daniel, tells them to saddle for us, and Michael must come with my dogs,\" she added to the huntsman.",
+   "decoded": "\"Daniel, tells them to saddle for us, and Michael must come with my dogs,\" she added to the huntsman.",
+   "errs": [
+    {
+     "i": 1,
+     "type": "grammar",
+     "from": "tell",
+     "to": "tells"
+    }
+   ]
+  },
+  {
+   "input": "But why talk nonsense!\" He glamced at his watch.",
+   "decoded": "But why talk nonsense!\" He glanced at his watch.",
+   "errs": [
+    {
+     "i": 5,
+     "type": "typo",
+     "from": "glanced",
+     "to": "glamced"
+    }
+   ]
+  },
+  {
+   "input": "Yet, with all these, you made me reveal that you wanted to know.",
+   "decoded": "Yet, with all these, you made me reveal that you wanted to know.",
+   "errs": [
+    {
+     "i": 8,
+     "type": "realword",
+     "from": "what",
+     "to": "that"
+    },
+    {
+     "i": 3,
+     "type": "grammar",
+     "from": "this",
+     "to": "these"
+    }
+   ]
+  },
+  {
+   "input": "Prophylactic injection of tetanus antitoxin may be indicated.",
+   "decoded": "Prophylactic injection of tetanus antitoxin may be indicated.",
+   "errs": []
+  },
+  {
+   "input": "Those who wear skillful with the pen assailed the patriots in editorials, rhymes, satires, and political catechisms.",
+   "decoded": "Those who were skillful with the pen assailed the patriots in editorials, rhymes, satires, and political catechisms.",
+   "errs": [
+    {
+     "i": 2,
+     "type": "realword",
+     "from": "were",
+     "to": "wear"
+    }
+   ]
+  },
+  {
+   "input": "Behind Kutuzov, at a distance that allowed every softly spoken word to be heard, followed some twenty men of his suite.",
+   "decoded": "Behind Kutuzov, at a distance that allowed every softly spoken word to be heard, followed some twenty men of his suite.",
+   "errs": []
+  },
+  {
+   "input": "\"Wil they burn the bridge or not?",
+   "decoded": "\"Wile they burn the bridge or not?",
+   "errs": [
+    {
+     "i": 0,
+     "type": "typo",
+     "from": "will",
+     "to": "wil"
+    }
+   ]
+  }
+ ]
+}

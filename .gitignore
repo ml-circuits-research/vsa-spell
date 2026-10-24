@@ -1,5 +1,5 @@
 node_modules/
-corpus/
+corpus
 data/*
 !data/confusions.json
 docs/vendor/

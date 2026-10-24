@@ -75,3 +75,10 @@ a model trained without `big.txt`, so they are out of domain.
   and answers `check` messages off the main thread.
 - Harper (optional) runs on the main thread; see [HARPER.md](HARPER.md).
 - Drafts, ignored words and the strictness setting are kept in `localStorage`.
+
+## 4. Sentence interpretation
+
+`docs/decoder.js` combines the speller, the confusion classes, a part-of-speech grammar
+(`docs/grammar.json`, from the tagged Brown corpus) and word-context hypervectors for 30,000 words
+(`docs/profiles.bin`) to choose the most probable sentence over any dictionary. It is described
+in [DECODER.md](DECODER.md).

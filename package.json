@@ -8,14 +8,20 @@
     "serve": "node scripts/serve.mjs 8080",
     "vendor:harper": "node scripts/vendor-harper.mjs",
     "data:fetch": "bash scripts/fetch-data.sh",
-    "data:build": "python3 src/build_corpus.py && python3 src/make_testset.py && node src/make_confusions.mjs 320",
+    "data:build": "python3 src/build_corpus.py && python3 src/make_testset.py && node src/make_confusions.mjs 320 && node src/make_commands.mjs",
     "bench:spell": "node src/eval_core.mjs 1024",
     "bench:symspell": "python3 src/eval_symspell.py",
     "bench:baselines": "node src/eval_js_baselines.mjs harper && node src/eval_js_baselines.mjs hunspell",
     "bench:context": "node --max-old-space-size=14000 src/context3.mjs ext",
     "bench:harper-context": "node src/harper_ctx3.mjs",
     "train:context": "node --max-old-space-size=14000 src/context3.mjs ext+big --export",
-    "test:browser": "node tests/test_demo.mjs"
+    "test:browser": "node tests/test_demo.mjs",
+    "train:grammar": "node src/train_grammar.mjs",
+    "train:profiles": "node --max-old-space-size=8000 src/train_profiles.mjs 30000 512 --export",
+    "bench:decoder": "node src/eval_decoder.mjs --n 1000 --harper",
+    "tune:decoder": "node src/eval_decoder.mjs --tune 60 --n 1000 --harper && node src/eval_commands.mjs && node src/write_weights.mjs",
+    "bench:commands": "node src/eval_commands.mjs",
+    "example:agent": "node examples/agent-pipeline.mjs"
   },
   "dependencies": {
     "double-metaphone": "2.0.1",

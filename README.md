@@ -1,9 +1,18 @@
 # Hypervector Proofreader
 
-English spelling and real-word error checking ("form" vs "from", "loose" vs "lose") built on
-**vector symbolic architectures** (VSA, hyperdimensional computing). It runs entirely in the
-browser, with no language model and no server. An optional grammar layer comes from
-[Harper](https://github.com/Automattic/harper).
+English spelling, real-word error checking ("form" vs "from", "loose" vs "lose") and sentence
+interpretation built on **vector symbolic architectures** (VSA, hyperdimensional computing). It
+runs entirely in the browser, with no language model and no server. An optional grammar layer
+comes from [Harper](https://github.com/Automattic/harper).
+
+The page has two modes:
+
+- **Proofread text** marks spelling and word-choice errors in a document.
+- **Interpret a sentence** returns the most probable intended sentence over a dictionary you
+  choose (general English, the agent-command preset, or your own words and example sentences),
+  with alternatives. Use it in front of a semantic parser or an agent:
+  `opne teh fiel` → `open the file`, using only words your parser knows. See
+  [docs/DECODER.md](docs/DECODER.md).
 
 ![Screenshot](docs/screenshot.png)
 
@@ -19,8 +28,8 @@ cd vsa-spell
 npm run serve          # no install needed for the demo
 ```
 
-Open <http://127.0.0.1:8080/>. The page loads about 12 MB of models, builds 80,000 word
-hypervectors in about 2 seconds and checks as you type.
+Open <http://127.0.0.1:8080/>. Proofreading loads about 12 MB of models and builds 80,000 word
+hypervectors in about 2 seconds; the Interpret tab loads 17 MB more the first time it opens.
 
 A local web server is required: browsers will not start the module Web Worker from a `file://` URL.
 `python3 -m http.server 8080 -d docs` works as well.
@@ -52,7 +61,11 @@ troubleshooting: [docs/HARPER.md](docs/HARPER.md).
 |---|---|---|
 | Spelling | 80,000 words as 1,024-bit hypervectors (character bigrams + trigrams, XOR binding, rotation for position, majority bundling) plus a Double Metaphone hypervector; Hamming search, rerank by frequency and edit distance | 20.5 MB |
 | Word choice | 320 confusion sets; one int8 class hypervector (D = 16,384) per word, learned by sparse random indexing over ±4 words of context with HDC retraining | 10.6 MB |
+| Grammar (statistical) | part-of-speech tag bigrams and P(tag \| word) from the tagged Brown corpus, Viterbi | 0.9 MB file |
+| Sentence context | word-context hypervectors for the 30,000 most frequent words (D = 512, int8) | 15.4 MB |
 | Grammar (optional) | Harper's rule-based linter (its spelling rules are hidden) | about 27 MB |
+
+Download sizes: proofreading 12 MB, interpretation 17 MB more, Harper 27 MB more (optional).
 
 How it works in detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
@@ -82,12 +95,34 @@ The VSA context model is on par with word n-grams at picking the right word and 
 instead of about 6 million n-gram entries; n-grams are still better at flagging errors at a low
 false-alarm rate. Full numbers, earlier rounds and caveats: [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
 
+Sentence interpretation (details in [docs/DECODER.md](docs/DECODER.md)):
+
+| Test | System | Sentences right | False changes |
+|---|---|---:|---:|
+| 1,000 general sentences, 0–2 errors | **Decoder** | **64.3%** | 0.58 / 100 words |
+| | Proofread mode | 49.8% | 1.11 |
+| | Harper, first suggestions | 43.2% | 4.03 |
+| 600 agent commands, 0–2 typos | **Decoder, own dictionary + examples** | **99.3%** | 0 |
+| | Spelling only, own dictionary | 92.8% | 0 |
+| | Spelling only, general dictionary | 56.8% | 0 |
+
+## Use the decoder from code
+
+```js
+import { loadDecoder } from './src/load-decoder.mjs';
+const dec = await loadDecoder({ dictionary: myWords, examples: myExampleCommands });
+dec.decode('creat a new fodler nmaed reports').best.text;  // 'create a new folder named reports'
+```
+
+`npm run example:agent` shows it in front of a toy command parser.
+
 ## Repository layout
 
 ```
-docs/       the demo (index.html, worker.js, vsa-core.js shared with Node, models) and the
+docs/       the demo (index.html, worker.js, vsa-core.js and decoder.js shared with Node, models) and the
             documentation; GitHub Pages publishes this folder
-src/        corpus building, confusion-set mining, training and benchmarks
+src/        corpus building, confusion-set mining, training, benchmarks, load-decoder.mjs (Node API)
+examples/   agent-pipeline.mjs: decoder in front of a command parser
 scripts/    static server, Harper vendoring, data download
 results/    JSON outputs of the benchmark runs
 tests/      headless browser test (Playwright)
